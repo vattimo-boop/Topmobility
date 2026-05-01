@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache"/>
+  <title>Test Firestore</title>
+</head>
+<body>
+<h2 id="msg">Iniciando...</h2>
+<pre id="log"></pre>
+<script>
+var PROJECT = "topmobility";
+var KEY     = "AIzaSyBV5HzqGiYoekZqmT23iwE6zyomBX4CcZ4";
+var URL     = "https://firestore.googleapis.com/v1/projects/" + PROJECT + "/databases/(default)/documents/requests?pageSize=1&key=" + KEY;
+
+document.getElementById('log').textContent = "URL: " + URL;
+document.getElementById('msg').textContent = "Haciendo fetch...";
+
+fetch(URL)
+  .then(function(r) {
+    document.getElementById('msg').textContent = "HTTP status: " + r.status;
+    return r.text();
+  })
+  .then(function(body) {
+    document.getElementById('log').textContent += "\n\nRespuesta:\n" + body.slice(0, 300);
+  })
+  .catch(function(e) {
+    document.getElementById('msg').textContent = "ERROR: " + e.message;
+    document.getElementById('log').textContent += "\n\nError: " + e.toString();
+  });
+</script>
+</body>
+</html>
