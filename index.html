@@ -149,6 +149,30 @@
 </div>
 
 <div class="view active" id="view-user">
+  <!-- Subscriber selector -->
+  <div id="subscriber-selector" class="card" style="margin-bottom:12px">
+    <div style="font-size:14px;font-weight:500;margin-bottom:12px">¿Cómo deseas solicitar el servicio?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button onclick="setUserType('normal')" id="btn-type-normal"
+        style="padding:14px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:14px;cursor:pointer;transition:all 0.15s">
+        👤 Cliente
+      </button>
+      <button onclick="setUserType('abonado')" id="btn-type-abonado"
+        style="padding:14px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:14px;cursor:pointer;transition:all 0.15s">
+        ⭐ Abonado
+      </button>
+    </div>
+    <div id="abonado-login" style="display:none;margin-top:12px">
+      <div class="field-label">Código de abonado</div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <input type="text" id="u-abonado-code" placeholder="Ej. AB001" style="flex:1;text-transform:uppercase"/>
+        <button class="btn-sm btn-sm-dark" onclick="verifyAbonado()">Verificar</button>
+      </div>
+      <div class="alert alert-error" id="abonado-err" style="display:none;margin-top:8px">Código no encontrado. Comprueba tu código de abonado.</div>
+    </div>
+  </div>
+
+  <div id="request-form" style="display:none">
   <div class="section-label">Nueva solicitud</div>
   <div class="card">
     <div class="field"><div class="field-label">Nombre del pasajero</div><input type="text" id="u-name" placeholder="Ej. Carlos Martínez"/></div>
@@ -164,11 +188,14 @@
     </div>
     <div class="field"><div class="field-label">Fecha y hora</div><input type="datetime-local" id="u-time"/></div>
     <div class="field"><div class="field-label">Número de vuelo <span style="color:var(--muted);font-weight:400">(opcional)</span></div><input type="text" id="u-flight" placeholder="Ej. IB3456" style="text-transform:uppercase"/></div>
+    <div class="field"><div class="field-label">Abonado <span style="color:var(--muted);font-weight:400">(código)</span></div><input type="text" id="u-abonado" placeholder="Ej. AB001" style="text-transform:uppercase" readonly/></div>
+    <div class="field"><div class="field-label">Número de tren <span style="color:var(--muted);font-weight:400">(opcional)</span></div><input type="text" id="u-train" placeholder="Ej. AVE 02345" style="text-transform:uppercase"/></div>
     <div class="field"><div class="field-label">Notas adicionales</div><textarea id="u-notes" placeholder="Equipaje, necesidades especiales..."></textarea></div>
     <button class="btn btn-dark" onclick="submitRequest()">Solicitar vehículo</button>
     <div class="alert alert-success" id="success-msg">Solicitud enviada. El administrador le asignará un vehículo en breve.</div>
     <div class="alert alert-error"   id="error-msg">Error al enviar. Comprueba tu conexión.</div>
   </div>
+  </div><!-- end request-form -->
 </div>
 
 <div class="view" id="view-driver">
@@ -196,6 +223,9 @@
       <button class="inner-tab active" onclick="switchInnerTab('drv-activos',this)">Asignados</button>
       <button class="inner-tab"        onclick="switchInnerTab('drv-completados',this)">Completados</button>
     </div>
+    <div style="display:flex;justify-content:flex-end;margin:-8px 0 8px">
+      <button onclick="driverClearHistory()" class="btn-sm" style="background:var(--red-bg);color:var(--red-text);border:none;font-size:12px">Borrar mi historial</button>
+    </div>
     <div id="tab-drv-activos"><div class="loading">Cargando...</div></div>
     <div id="tab-drv-completados" style="display:none"><div class="loading">Cargando...</div></div>
   </div>
@@ -221,21 +251,59 @@
       <div class="stat-card"><div class="stat-num" id="stat-assigned">—</div><div class="stat-label">Asignados</div></div>
       <div class="stat-card"><div class="stat-num" id="stat-done">—</div><div class="stat-label">Completados</div></div>
     </div>
-    <div class="inner-tabs">
+    <div class="inner-tabs" style="overflow-x:auto;white-space:nowrap;display:flex">
       <button class="inner-tab active" onclick="switchInnerTab('activos',this)">Activos</button>
       <button class="inner-tab"        onclick="switchInnerTab('historial',this)">Historial</button>
+      <button class="inner-tab"        onclick="switchInnerTab('abonados-hist',this)">H. Abonados</button>
       <button class="inner-tab"        onclick="switchInnerTab('conductores',this)">Conductores</button>
+      <button class="inner-tab"        onclick="switchInnerTab('abonados',this)">Abonados</button>
     </div>
     <div id="tab-activos"><div class="loading">Cargando solicitudes...</div></div>
     <div id="tab-historial" style="display:none">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
+        <button onclick="clearAllHistory()" class="btn-sm" style="background:var(--red-bg);color:var(--red-text);border:none">Borrar todo</button>
         <button onclick="generatePDF()" class="btn-sm btn-sm-dark" style="display:flex;align-items:center;gap:6px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Exportar PDF
         </button>
       </div>
       <div id="requests-history"></div>
     </div>
+    <div id="tab-abonados-hist" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:13px;color:var(--muted)">Servicios de abonados</div>
+          <button onclick="generatePDF(true)" class="btn-sm btn-sm-dark" style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Exportar PDF
+          </button>
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="section-label" style="margin-top:0">Filtros</div>
+          <div class="field"><div class="field-label">Abonado</div>
+            <select id="pdf-abonado-filter"><option value="">Todos</option></select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="field"><div class="field-label">Desde</div><input type="date" id="pdf-date-from"/></div>
+            <div class="field"><div class="field-label">Hasta</div><input type="date" id="pdf-date-to"/></div>
+          </div>
+        </div>
+        <div id="tab-abonados-hist-list"><div class="empty">Filtra y exporta el historial de abonados</div></div>
+    </div>
+
+    <div id="tab-abonados" style="display:none">
+      <div class="card" style="margin-bottom:16px">
+        <div class="section-label" style="margin-top:0">Añadir abonado</div>
+        <div class="field"><div class="field-label">Nombre completo</div><input type="text" id="ab-name" placeholder="Ej. Carlos Martínez"/></div>
+        <div class="field"><div class="field-label">Código de abonado</div><input type="text" id="ab-code" placeholder="Ej. AB001" style="text-transform:uppercase;font-family:var(--mono);font-weight:500"/></div>
+        <div class="field"><div class="field-label">Teléfono</div><input type="tel" id="ab-phone" placeholder="+34 600 000 000"/></div>
+        <div class="field"><div class="field-label">Email</div><input type="text" id="ab-email" placeholder="correo@ejemplo.com"/></div>
+        <button class="btn btn-dark" onclick="addAbonado()" style="margin-top:4px">Registrar abonado</button>
+        <div class="alert alert-success" id="abonado-ok">Abonado registrado correctamente.</div>
+        <div class="alert alert-error"   id="abonado-err2">Error al registrar. Inténtalo de nuevo.</div>
+      </div>
+      <div id="abonados-list"><div class="loading">Cargando abonados...</div></div>
+    </div>
+
     <div id="tab-conductores" style="display:none">
 
       <!-- ADD DRIVER FORM -->
@@ -374,17 +442,19 @@ init();
 async function poll() {
   if (!adminLoggedIn) return;
   try {
-    const [req, hist, drvs] = await Promise.all([fsGet('requests'), fsGet('history'), fsGet('drivers')]);
+    const [req, hist, drvs, abons] = await Promise.all([fsGet('requests'), fsGet('history'), fsGet('drivers'), fsGet('abonados')]);
     req.sort((a,b)=> b.id > a.id ? 1 : -1);
     hist.sort((a,b)=> b.id > a.id ? 1 : -1);
     drvs.sort((a,b)=> (a.name||'') > (b.name||'') ? 1 : -1);
     activeData  = req;
     historyData = hist;
     driversData = drvs;
+    abonadosData = abons;
     renderRequests(req);
     renderHistory(hist);
     // Refresh drivers list if tab is active
     if (document.getElementById('tab-conductores').style.display === 'block') renderDrivers(drvs);
+    if (document.getElementById('tab-abonados').style.display === 'block') renderAbonados(abons);
     // Refresh driver panel if logged in
     if (currentDriver && document.getElementById('view-driver').classList.contains('active')) renderDriverServices();
     // Driver dropdown updated only on renderRequests (not every poll cycle)
@@ -527,7 +597,8 @@ function renderHistory(list, elId) {
             <div class="hist-detail">${esc(h.phone||'')}</div>
             <div class="hist-detail">${esc(h.pickup)} → ${esc(h.dest)}</div>
             <div class="hist-detail">${esc(h.driver||'')}</div>
-            ${h.notified?`<div style="margin-top:4px"><span class="badge badge-done" style="font-size:11px">✓ Notificado</span></div>`:''}
+            ${h.abonado?`<div style="margin-top:4px"><span class="badge badge-assigned" style="font-size:11px">⭐ ${esc(h.abonado)}</span></div>`:''}
+          ${h.notified?`<div style="margin-top:4px"><span class="badge badge-done" style="font-size:11px">✓ Notificado</span></div>`:''}
           </div>
           <div class="hist-right">
             <div class="hist-plate">${esc(h.plate||'—')}</div>
@@ -555,17 +626,21 @@ async function submitRequest() {
   const type   = document.getElementById('u-type').value;
   const time   = document.getElementById('u-time').value;
   const notes  = document.getElementById('u-notes').value.trim();
-  const flight = document.getElementById('u-flight').value.trim().toUpperCase();
+  const flight  = document.getElementById('u-flight').value.trim().toUpperCase();
+  const abonado = (document.getElementById('u-abonado')||{value:''}).value.trim().toUpperCase();
+  const train   = (document.getElementById('u-train')||{value:''}).value.trim().toUpperCase();
   if (!name||!pickup||!dest) { alert('Por favor rellena nombre, recogida y destino.'); return; }
   const timeLabel = time ? new Date(time).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Sin especificar';
   const ok  = document.getElementById('success-msg');
   const err = document.getElementById('error-msg');
   try {
-    await fsAdd('requests',{name,phone,pickup,dest,type,time:timeLabel,notes,flight,status:'pending',driver:'',plate:'',notified:false});
+    await fsAdd('requests',{name,phone,pickup,dest,type,time:timeLabel,notes,flight,abonado,train,status:'pending',driver:'',plate:'',notified:false});
     ok.classList.add('show'); err.classList.remove('show');
     notifyAdmin(name, pickup, dest);
     setTimeout(()=>ok.classList.remove('show'),4000);
-    ['u-name','u-phone','u-pickup','u-dest','u-notes','u-flight'].forEach(id=>document.getElementById(id).value='');
+    ['u-name','u-phone','u-pickup','u-dest','u-notes','u-flight','u-train'].forEach(id=>document.getElementById(id).value='');
+    if(document.getElementById('u-abonado')) document.getElementById('u-abonado').value='';
+    setUserType(null);
     document.getElementById('u-time').value='';
   } catch(e) {
     err.classList.add('show'); ok.classList.remove('show');
@@ -824,9 +899,132 @@ async function driverComplete(id) {
   if (currentDriver) renderDriverServices();
 }
 
+// ── USER TYPE SELECTOR ──────────────────────────────────────────
+let abonadosData = [];
+
+function setUserType(type) {
+  const selector = document.getElementById('subscriber-selector');
+  const form     = document.getElementById('request-form');
+  const aboLogin = document.getElementById('abonado-login');
+  const btnNorm  = document.getElementById('btn-type-normal');
+  const btnAbon  = document.getElementById('btn-type-abonado');
+  const aboField = document.getElementById('u-abonado');
+
+  if (!type) {
+    // Reset
+    if (selector) selector.style.display = 'block';
+    if (form) form.style.display = 'none';
+    if (aboLogin) aboLogin.style.display = 'none';
+    if (aboField) aboField.value = '';
+    if (btnNorm) { btnNorm.style.background=''; btnNorm.style.color=''; btnNorm.style.borderColor=''; }
+    if (btnAbon) { btnAbon.style.background=''; btnAbon.style.color=''; btnAbon.style.borderColor=''; }
+    return;
+  }
+  if (type === 'normal') {
+    if (aboField) aboField.value = '';
+    if (aboLogin) aboLogin.style.display = 'none';
+    if (form) form.style.display = 'block';
+    if (btnNorm) { btnNorm.style.background='var(--dark)'; btnNorm.style.color='#fff'; }
+    if (btnAbon) { btnAbon.style.background=''; btnAbon.style.color=''; }
+  } else if (type === 'abonado') {
+    if (aboLogin) aboLogin.style.display = 'block';
+    if (form) form.style.display = 'none';
+    if (btnAbon) { btnAbon.style.background='var(--dark)'; btnAbon.style.color='#fff'; }
+    if (btnNorm) { btnNorm.style.background=''; btnNorm.style.color=''; }
+  }
+}
+
+async function verifyAbonado() {
+  const code = (document.getElementById('u-abonado-code')||{value:''}).value.trim().toUpperCase();
+  const errEl = document.getElementById('abonado-err');
+  if (!code) return;
+  errEl.style.display = 'none';
+  const all = abonadosData.length ? abonadosData : await fsGet('abonados');
+  const found = all.find(a => (a.code||'').toUpperCase() === code);
+  if (!found) { errEl.style.display = 'block'; return; }
+  document.getElementById('u-abonado').value = found.code;
+  document.getElementById('u-name').value    = found.name || '';
+  document.getElementById('u-phone').value   = found.phone || '';
+  document.getElementById('request-form').style.display = 'block';
+}
+
+// ── ABONADOS MANAGEMENT ──────────────────────────────────────────
+async function addAbonado() {
+  const name  = document.getElementById('ab-name').value.trim();
+  const code  = document.getElementById('ab-code').value.trim().toUpperCase();
+  const phone = document.getElementById('ab-phone').value.trim();
+  const email = document.getElementById('ab-email').value.trim();
+  if (!name || !code) { alert('Por favor rellena nombre y código.'); return; }
+  const ok  = document.getElementById('abonado-ok');
+  const err = document.getElementById('abonado-err2');
+  try {
+    await fsAdd('abonados', { name, code, phone, email });
+    ok.classList.add('show'); err.classList.remove('show');
+    setTimeout(() => ok.classList.remove('show'), 3000);
+    ['ab-name','ab-code','ab-phone','ab-email'].forEach(id => document.getElementById(id).value = '');
+    await poll();
+  } catch(e) {
+    err.classList.add('show'); ok.classList.remove('show');
+  }
+}
+
+async function deleteAbonado(id) {
+  if (!confirm('¿Eliminar este abonado?')) return;
+  await fsDel('abonados', id);
+  await poll();
+}
+
+function renderAbonados(list) {
+  const el = document.getElementById('abonados-list');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="empty">No hay abonados registrados</div>'; return; }
+  el.innerHTML = '';
+  // Update filter dropdown
+  const filterSel = document.getElementById('pdf-abonado-filter');
+  if (filterSel) {
+    filterSel.innerHTML = '<option value="">Todos</option>' + list.map(a => '<option value="'+a.code+'">'+a.name+' ('+a.code+')</option>').join('');
+  }
+  list.forEach(a => {
+    el.innerHTML += '<div class="card" style="margin-bottom:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div><div style="font-size:15px;font-weight:500">' + esc(a.name) + '</div>' +
+        '<div style="font-family:var(--mono);font-size:13px;color:var(--blue-text);margin-top:2px">' + esc(a.code) + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + esc(a.phone||'') + (a.email ? ' · ' + esc(a.email) : '') + '</div></div>' +
+        '<button onclick="deleteAbonado(''+a.id+'')" style="background:transparent;border:0.5px solid var(--border2);color:var(--muted);border-radius:var(--radius-sm);padding:5px 10px;font-size:12px;cursor:pointer">Eliminar</button>' +
+      '</div></div>';
+  });
+}
+
+// ── CLEAR HISTORY ────────────────────────────────────────────────
+async function clearAllHistory() {
+  if (!confirm('¿Eliminar TODO el historial de servicios? Esta acción no se puede deshacer.')) return;
+  const all = await fsGet('history');
+  await Promise.all(all.map(h => fsDel('history', h.id)));
+  await poll();
+}
+
+async function driverClearHistory() {
+  if (!currentDriver) return;
+  if (!confirm('¿Eliminar tu historial de servicios completados?')) return;
+  const driverLabel = currentDriver.name + ' — ' + currentDriver.vehicle;
+  const all = await fsGet('history');
+  const mine = all.filter(h => h.driver === driverLabel);
+  await Promise.all(mine.map(h => fsDel('history', h.id)));
+  await poll();
+  renderDriverServices();
+}
+
 // ── PDF EXPORT ───────────────────────────────────────────────────
-function generatePDF() {
-  if (!historyData.length) { alert('No hay servicios completados para exportar.'); return; }
+function generatePDF(abonadosOnly) {
+  const aboFilter = abonadosOnly ? (document.getElementById('pdf-abonado-filter')||{value:''}).value : '';
+  const dateFrom  = abonadosOnly ? (document.getElementById('pdf-date-from')||{value:''}).value : '';
+  const dateTo    = abonadosOnly ? (document.getElementById('pdf-date-to')||{value:''}).value : '';
+  let data = historyData;
+  if (abonadosOnly) data = data.filter(h => h.abonado);
+  if (aboFilter) data = data.filter(h => (h.abonado||'').toUpperCase() === aboFilter.toUpperCase());
+  if (dateFrom) data = data.filter(h => (h.completedAt||'') >= dateFrom);
+  if (dateTo)   data = data.filter(h => (h.completedAt||'') <= dateTo);
+  if (!data.length) { alert('No hay servicios para exportar con los filtros seleccionados.'); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
@@ -845,10 +1043,10 @@ function generatePDF() {
   doc.text('Generado: ' + fecha, 14, 26);
 
   // Total amount
-  const total = historyData.reduce((sum, h) => sum + (Number(h.amount)||0), 0);
+  const total = data.reduce((sum, h) => sum + (Number(h.amount)||0), 0);
 
   // Table
-  const rows = historyData.map(h => [
+  const rows = data.map(h => [
     h.completedAt || '—',
     h.name || '—',
     h.phone || '—',
@@ -898,6 +1096,18 @@ function generatePDF() {
   doc.save('topmobility-servicios-' + new Date().toISOString().slice(0,10) + '.pdf');
 }
 
+// ── ABONADOS HISTORY ────────────────────────────────────────────
+function renderAbonadosHistory() {
+  const aboFilter  = (document.getElementById('pdf-abonado-filter')||{value:''}).value;
+  const dateFrom   = (document.getElementById('pdf-date-from')||{value:''}).value;
+  const dateTo     = (document.getElementById('pdf-date-to')||{value:''}).value;
+  let filtered = historyData.filter(h => h.abonado);
+  if (aboFilter) filtered = filtered.filter(h => (h.abonado||'').toUpperCase() === aboFilter.toUpperCase());
+  if (dateFrom)  filtered = filtered.filter(h => (h.completedAt||'') >= dateFrom);
+  if (dateTo)    filtered = filtered.filter(h => (h.completedAt||'') <= dateTo);
+  renderHistory(filtered, 'tab-abonados-hist-list');
+}
+
 // ── UI ───────────────────────────────────────────────────────────
 function switchRole(role) {
   document.querySelectorAll('.tab-nav-btn').forEach(b=>b.classList.remove('active'));
@@ -915,11 +1125,15 @@ function switchInnerTab(tab, btn) {
     document.querySelectorAll('.inner-tab').forEach(b => b.classList.remove('active'));
   }
   btn.classList.add('active');
-  if (['activos','historial','conductores'].includes(tab)) {
-    document.getElementById('tab-activos').style.display     = tab==='activos'     ? 'block':'none';
-    document.getElementById('tab-historial').style.display   = tab==='historial'   ? 'block':'none';
-    document.getElementById('tab-conductores').style.display = tab==='conductores' ? 'block':'none';
+  if (['activos','historial','abonados-hist','conductores','abonados'].includes(tab)) {
+    document.getElementById('tab-activos').style.display         = tab==='activos'       ? 'block':'none';
+    document.getElementById('tab-historial').style.display       = tab==='historial'     ? 'block':'none';
+    document.getElementById('tab-abonados-hist').style.display   = tab==='abonados-hist' ? 'block':'none';
+    document.getElementById('tab-conductores').style.display     = tab==='conductores'   ? 'block':'none';
+    document.getElementById('tab-abonados').style.display        = tab==='abonados'      ? 'block':'none';
     if (tab==='conductores') renderDrivers(driversData);
+    if (tab==='abonados') renderAbonados(abonadosData);
+    if (tab==='abonados-hist') renderAbonadosHistory();
   }
   if (['drv-activos','drv-completados'].includes(tab)) {
     document.getElementById('tab-drv-activos').style.display     = tab==='drv-activos'     ? 'block':'none';
@@ -933,32 +1147,24 @@ async function requestPushPermission() {
   if (Notification.permission === 'default') await Notification.requestPermission();
 }
 
-const NTFY_TOPIC = 'topmobility-' + PROJECT_ID + '-admin';
+const NTFY_TOPIC = 'topmobility-admin-mgn150';
 
 async function notifyAdmin(name, pickup, dest) {
-  // Push via ntfy.sh — admin must subscribe once at ntfy.sh/topmobility-topmobility-admin
+  const msg = name + ' · ' + pickup + ' → ' + dest;
   try {
-    await fetch('https://ntfy.sh/' + NTFY_TOPIC, {
+    const r = await fetch('https://ntfy.sh/' + NTFY_TOPIC, {
       method: 'POST',
       headers: {
-        'Title': '🚖 Nueva solicitud',
+        'Title': 'Nueva solicitud Topmobility',
         'Priority': 'urgent',
-        'Tags': 'taxi,rotating_light',
-        'Content-Type': 'text/plain'
+        'Tags': 'taxi',
+        'Content-Type': 'text/plain; charset=utf-8'
       },
-      body: name + '\n📍 ' + pickup + ' → ' + dest
+      body: msg
     });
-  } catch(e) {}
-  // Local notification if browser permission granted
-  if (Notification.permission === 'granted') {
-    try {
-      new Notification('🚖 Nueva solicitud — Topmobility', {
-        body: name + '\n📍 ' + pickup + ' → ' + dest,
-        icon: '/icons/icon-192.png',
-        tag: 'nueva-solicitud',
-        requireInteraction: true
-      });
-    } catch(e2) {}
+    console.log('ntfy status:', r.status);
+  } catch(e) {
+    console.error('ntfy error:', e);
   }
 }
 
