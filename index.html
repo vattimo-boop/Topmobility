@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Topmobility" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>Topmobility</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <script>
+    // Kill any existing service worker immediately
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister(); });
+      });
+      // Also clear all caches
+      if ('caches' in window) {
+        caches.keys().then(function(names) {
+          names.forEach(function(n) { caches.delete(n); });
+        });
+      }
+    }
+  </script>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
+    :root {
+      --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;
+      --dark:#1a1a2e;--dark2:#2a2a4e;
+      --text:#1c1c1c;--muted:#888780;
+      --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);
+      --green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;
+      --amber-bg:#FAEEDA;--amber-text:#854F0B;
+      --blue-bg:#E6F1FB;--blue-text:#185FA5;
+      --red-bg:#FCEBEB;--red-text:#A32D2D;
+      --radius:12px;--radius-sm:8px;
+      --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    .topbar{background:var(--dark);padding:env(safe-area-inset-top,0) 0 0;position:sticky;top:0;z-index:100}
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+    .logo{font-size:16px;font-weight:500;color:#fff;letter-spacing:1px}
+    .logo-sub{font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px}
+    .tab-nav{display:flex;background:var(--dark);padding:0 16px 12px;gap:6px}
+    .tab-nav-btn{flex:1;padding:9px 0;font-size:13px;font-family:var(--font);border:none;border-radius:var(--radius-sm);cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);transition:all 0.15s}
+    .tab-nav-btn.active{background:rgba(255,255,255,0.15);color:#fff;font-weight:500}
+    .fb-banner{font-size:12px;padding:8px 16px;display:flex;align-items:center;gap:8px}
+    .fb-banner.ok{background:var(--green-bg);color:var(--green-text)}
+    .fb-banner.warn{background:var(--amber-bg);color:var(--amber-text)}
+    .fb-banner.err{background:var(--red-bg);color:var(--red-text)}
+    .fb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .fb-dot-ok{background:#639922}.fb-dot-warn{background:#EF9F27}.fb-dot-err{background:#c0392b}
+    .view{display:none;padding:20px 16px 100px}.view.active{display:block}
+    .section-label{font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:20px 0 10px}
+    .section-label:first-child{margin-top:0}
+    .card{background:var(--surface);border-radius:var(--radius);border:0.5px solid var(--border);padding:16px;margin-bottom:10px}
+    .field{margin-bottom:14px}
+    .field-label{font-size:12px;color:var(--muted);margin-bottom:5px}
+    input[type=text],input[type=tel],input[type=password],input[type=datetime-local],select,textarea{width:100%;padding:12px 14px;font-size:15px;font-family:var(--font);border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);color:var(--text);appearance:none;-webkit-appearance:none;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--dark);box-shadow:0 0 0 3px rgba(26,26,46,0.08)}
+    textarea{resize:none;height:80px;line-height:1.5}
+    select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+    .btn{width:100%;padding:14px;font-size:15px;font-family:var(--font);font-weight:500;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.12s}
+    .btn:active{transform:scale(0.98)}.btn-dark{background:var(--dark);color:#fff}
+    .btn-sm{padding:8px 14px;font-size:13px;font-family:var(--font);font-weight:500;border:none;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;transition:all 0.12s}
+    .btn-sm:active{transform:scale(0.97)}
+    .btn-sm-dark{background:var(--dark);color:#fff}
+    .btn-sm-green{background:var(--green);color:#fff}
+    .btn-sm-purple{background:#534AB7;color:#fff}
+    .btn-outline-sm{padding:8px 14px;font-size:13px;font-family:var(--font);background:transparent;border:0.5px solid var(--border2);color:var(--text);border-radius:var(--radius-sm);cursor:pointer}
+    .btn-logout{font-size:12px;font-family:var(--font);background:transparent;border:0.5px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);padding:5px 14px;border-radius:20px;cursor:pointer}
+    .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:500}
+    .badge-pending{background:var(--amber-bg);color:var(--amber-text)}
+    .badge-assigned{background:var(--blue-bg);color:var(--blue-text)}
+    .badge-done{background:var(--green-bg);color:var(--green-text)}
+    .dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+    .dot-p{background:#EF9F27}.dot-a{background:#378ADD}.dot-d{background:#639922}
+    .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+    .stat-card{background:var(--surface);border-radius:var(--radius-sm);border:0.5px solid var(--border);padding:14px}
+    .stat-num{font-size:28px;font-weight:300;color:var(--text);line-height:1}
+    .stat-label{font-size:12px;color:var(--muted);margin-top:4px}
+    .rc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+    .rc-name{font-size:15px;font-weight:500}.rc-phone{font-size:13px;color:var(--muted);margin-top:2px}
+    .rc-row{display:flex;gap:8px;font-size:13px;color:var(--muted);margin-top:5px}
+    .rc-row span{color:var(--text)}
+    .divider{border:none;border-top:0.5px solid var(--border);margin:12px 0}
+    .row-flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .plate-display{font-family:var(--mono);font-size:13px;font-weight:500;background:var(--dark);color:#fff;padding:4px 12px;border-radius:6px;letter-spacing:1.5px}
+    .notif-panel{background:var(--surface2);border-radius:var(--radius-sm);padding:14px;margin-top:10px}
+    .notif-preview{background:var(--dark);border-radius:var(--radius-sm);padding:14px;margin:10px 0}
+    .notif-preview-text{font-size:13px;color:rgba(255,255,255,0.85);line-height:1.7;white-space:pre-wrap;font-family:var(--font)}
+    .hist-card{background:var(--surface);border-radius:var(--radius);border:0.5px solid var(--border);padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;gap:12px}
+    .hist-left{flex:1;min-width:0}.hist-name{font-size:14px;font-weight:500}
+    .hist-detail{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+    .hist-right{text-align:right;flex-shrink:0}
+    .hist-plate{font-family:var(--mono);font-size:14px;font-weight:500;letter-spacing:1px}
+    .hist-time{font-size:11px;color:var(--muted);margin-top:4px}
+    .login-wrap{padding:40px 16px 20px}
+    .login-card{background:var(--surface);border-radius:var(--radius);border:0.5px solid var(--border);padding:24px;max-width:360px;margin:0 auto}
+    .login-icon{width:48px;height:48px;background:var(--dark);border-radius:12px;margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+    .login-icon svg{width:24px;height:24px;fill:none;stroke:rgba(255,255,255,0.8);stroke-width:1.5}
+    .login-title{font-size:17px;font-weight:500;text-align:center;margin-bottom:4px}
+    .login-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px}
+    .alert{border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;margin-top:12px;display:none}
+    .alert.show{display:block}
+    .alert-success{background:var(--green-bg);color:var(--green-text)}
+    .alert-error{background:var(--red-bg);color:var(--red-text)}
+    .inner-tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:16px}
+    .inner-tab{padding:10px 16px;font-size:13px;font-family:var(--font);background:transparent;border:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-0.5px}
+    .inner-tab.active{color:var(--text);font-weight:500;border-bottom-color:var(--dark)}
+    .empty{text-align:center;padding:40px 0;color:var(--muted);font-size:14px}
+    .loading{text-align:center;padding:30px 0;color:var(--muted);font-size:13px}
+    .bottom-safe{height:env(safe-area-inset-bottom,0)}
+    .install-banner{background:var(--dark2);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+    .install-banner button{background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-family:var(--font);cursor:pointer}
+    .close-x{background:transparent!important;color:rgba(255,255,255,0.5)!important;font-size:18px!important;padding:0 4px!important}
+  </style>
+</head>
+<body>
+
+<div class="install-banner" id="install-banner" style="display:none">
+  <span>Instala Topmobility: pulsa <strong>Compartir</strong> → <strong>Añadir a inicio</strong></span>
+  <button class="close-x" onclick="this.parentElement.style.display='none'">✕</button>
+</div>
+
+<div class="fb-banner warn" id="fb-status">
+  <span class="fb-dot fb-dot-warn" id="fb-dot"></span>
+  <span id="fb-status-text">Conectando con la base de datos...</span>
+</div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div><div class="logo">TOPMOBILITY</div><div class="logo-sub">Servicio premium · Madrid</div></div>
+    <div id="topbar-right"></div>
+  </div>
+  <div class="tab-nav">
+    <button class="tab-nav-btn active" id="btn-user"    onclick="switchRole('user')">Solicitar viaje</button>
+    <button class="tab-nav-btn"        id="btn-driver"  onclick="switchRole('driver')">Conductores</button>
+    <button class="tab-nav-btn"        id="btn-admin"   onclick="switchRole('admin')">Administrador</button>
+  </div>
+</div>
+
+<div class="view active" id="view-user">
+  <!-- Subscriber selector -->
+  <div id="subscriber-selector" class="card" style="margin-bottom:12px">
+    <div style="font-size:14px;font-weight:500;margin-bottom:12px">¿Cómo deseas solicitar el servicio?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button onclick="setUserType('normal')" id="btn-type-normal"
+        style="padding:14px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:14px;cursor:pointer;transition:all 0.15s">
+        👤 Cliente
+      </button>
+      <button onclick="setUserType('abonado')" id="btn-type-abonado"
+        style="padding:14px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:14px;cursor:pointer;transition:all 0.15s">
+        ⭐ Abonado
+      </button>
+    </div>
+    <div id="abonado-login" style="display:none;margin-top:12px">
+      <div class="field-label">Código de abonado</div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <input type="text" id="u-abonado-code" placeholder="Ej. AB001" style="flex:1;text-transform:uppercase"/>
+        <button class="btn-sm btn-sm-dark" onclick="verifyAbonado()">Verificar</button>
+      </div>
+      <div class="alert alert-error" id="abonado-err" style="display:none;margin-top:8px">Código no encontrado. Comprueba tu código de abonado.</div>
+    </div>
+  </div>
+
+  <div id="request-form" style="display:none">
+  <div class="section-label">Nueva solicitud</div>
+  <div class="card">
+    <div class="field"><div class="field-label">Nombre del pasajero</div><input type="text" id="u-name" placeholder="Ej. Carlos Martínez"/></div>
+    <div class="field"><div class="field-label">Teléfono de contacto</div><input type="tel" id="u-phone" placeholder="+34 600 000 000"/></div>
+    <div class="field"><div class="field-label">Dirección de recogida</div><input type="text" id="u-pickup" placeholder="Ej. Calle Serrano 41, Madrid"/></div>
+    <div class="field"><div class="field-label">Destino</div><input type="text" id="u-dest" placeholder="Ej. Aeropuerto Barajas T4"/></div>
+    <div class="field"><div class="field-label">Tipo de vehículo</div>
+      <select id="u-type">
+        <option>Berlina premium (4 plazas)</option>
+        <option>SUV ejecutivo (5 plazas)</option>
+        <option>Minivan VIP (7 plazas)</option>
+      </select>
+    </div>
+    <div class="field"><div class="field-label">Fecha y hora</div><input type="datetime-local" id="u-time"/></div>
+    <div class="field"><div class="field-label">Número de vuelo <span style="color:var(--muted);font-weight:400">(opcional)</span></div><input type="text" id="u-flight" placeholder="Ej. IB3456" style="text-transform:uppercase"/></div>
+    <div class="field"><div class="field-label">Abonado <span style="color:var(--muted);font-weight:400">(código)</span></div><input type="text" id="u-abonado" placeholder="Ej. AB001" style="text-transform:uppercase" readonly/></div>
+    <div class="field"><div class="field-label">Número de tren <span style="color:var(--muted);font-weight:400">(opcional)</span></div><input type="text" id="u-train" placeholder="Ej. AVE 02345" style="text-transform:uppercase"/></div>
+    <div class="field"><div class="field-label">Notas adicionales</div><textarea id="u-notes" placeholder="Equipaje, necesidades especiales..."></textarea></div>
+    <button class="btn btn-dark" onclick="submitRequest()">Solicitar vehículo</button>
+    <div class="alert alert-success" id="success-msg">Solicitud enviada. El administrador le asignará un vehículo en breve.</div>
+    <div class="alert alert-error"   id="error-msg">Error al enviar. Comprueba tu conexión.</div>
+  </div>
+  </div><!-- end request-form -->
+</div>
+
+<div class="view" id="view-driver">
+  <div class="section-label">Acceso conductor</div>
+  <div class="card" id="driver-login-card">
+    <div class="field-label" style="margin-bottom:8px">Introduce tu matrícula para ver tus servicios</div>
+    <div class="field">
+      <div class="field-label">Matrícula del vehículo</div>
+      <input type="text" id="drv-plate-input" placeholder="Ej. 1234 ABC"
+        style="text-transform:uppercase;font-family:var(--mono);letter-spacing:1px;font-weight:500"
+        onkeydown="if(event.key==='Enter')driverLogin()"/>
+    </div>
+    <button class="btn btn-dark" onclick="driverLogin()">Ver mis servicios</button>
+    <div class="alert alert-error" id="drv-login-err" style="display:none">Matrícula no encontrada. Comprueba que estás registrado.</div>
+  </div>
+  <div id="driver-panel" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <div style="font-size:15px;font-weight:500" id="drv-welcome"></div>
+        <div style="font-size:12px;color:var(--muted)" id="drv-vehicle"></div>
+      </div>
+      <button class="btn-logout" style="border-color:var(--border2);color:var(--muted)" onclick="driverLogout()">Salir</button>
+    </div>
+    <div class="inner-tabs">
+      <button class="inner-tab active" onclick="switchInnerTab('drv-activos',this)">Asignados</button>
+      <button class="inner-tab"        onclick="switchInnerTab('drv-completados',this)">Completados</button>
+    </div><!-- end inner-tabs -->
+    <div style="display:flex;justify-content:flex-end;margin:4px 0 8px">
+      <button onclick="driverClearHistory()" class="btn-sm" style="background:var(--red-bg);color:var(--red-text);border:none;font-size:12px">Borrar mi historial</button>
+    </div>
+    <div id="tab-drv-activos"><div class="loading">Cargando...</div></div>
+    <div id="tab-drv-completados" style="display:none"><div class="loading">Cargando...</div></div>
+  </div>
+</div>
+
+<div class="view" id="view-admin">
+  <div class="login-wrap" id="admin-login">
+    <div class="login-card">
+      <div class="login-icon"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+      <div class="login-title">Acceso administrador</div>
+      <div class="login-sub">Introduce la contraseña para acceder al panel.</div>
+      <div class="field"><div class="field-label">Contraseña</div>
+        <input type="password" id="admin-pw" placeholder="••••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn btn-dark" onclick="doLogin()">Entrar</button>
+      <div class="alert alert-error" id="login-error">Contraseña incorrecta. Inténtalo de nuevo.</div>
+    </div>
+  </div>
+  <div id="admin-dashboard" style="display:none">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Total</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-pending">—</div><div class="stat-label">Pendientes</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-assigned">—</div><div class="stat-label">Asignados</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-done">—</div><div class="stat-label">Completados</div></div>
+    </div>
+    <div class="inner-tabs" style="overflow-x:auto;white-space:nowrap;display:flex">
+      <button class="inner-tab active" onclick="switchInnerTab('activos',this)">Activos</button>
+      <button class="inner-tab"        onclick="switchInnerTab('historial',this)">Historial</button>
+      <button class="inner-tab"        onclick="switchInnerTab('abonados-hist',this)">H. Abonados</button>
+      <button class="inner-tab"        onclick="switchInnerTab('conductores',this)">Conductores</button>
+      <button class="inner-tab"        onclick="switchInnerTab('abonados',this)">Abonados</button>
+    </div>
+    <div id="tab-activos"><div class="loading">Cargando solicitudes...</div></div>
+    <div id="tab-historial" style="display:none">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
+        <button onclick="clearAllHistory()" class="btn-sm" style="background:var(--red-bg);color:var(--red-text);border:none">Borrar todo</button>
+        <button onclick="generatePDF()" class="btn-sm btn-sm-dark" style="display:flex;align-items:center;gap:6px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Exportar PDF
+        </button>
+      </div>
+      <div id="requests-history"></div>
+    </div>
+    <div id="tab-abonados-hist" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:13px;color:var(--muted)">Servicios de abonados</div>
+          <button onclick="generatePDF(true)" class="btn-sm btn-sm-dark" style="display:flex;align-items:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Exportar PDF
+          </button>
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="section-label" style="margin-top:0">Filtros</div>
+          <div class="field"><div class="field-label">Abonado</div>
+            <select id="pdf-abonado-filter"><option value="">Todos</option></select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="field"><div class="field-label">Desde</div><input type="date" id="pdf-date-from"/></div>
+            <div class="field"><div class="field-label">Hasta</div><input type="date" id="pdf-date-to"/></div>
+          </div>
+        </div>
+        <div id="tab-abonados-hist-list"><div class="empty">Filtra y exporta el historial de abonados</div></div>
+    </div>
+
+    <div id="tab-abonados" style="display:none">
+      <div class="card" style="margin-bottom:16px">
+        <div class="section-label" style="margin-top:0">Añadir abonado</div>
+        <div class="field"><div class="field-label">Nombre completo</div><input type="text" id="ab-name" placeholder="Ej. Carlos Martínez"/></div>
+        <div class="field"><div class="field-label">Código de abonado</div><input type="text" id="ab-code" placeholder="Ej. AB001" style="text-transform:uppercase;font-family:var(--mono);font-weight:500"/></div>
+        <div class="field"><div class="field-label">Teléfono</div><input type="tel" id="ab-phone" placeholder="+34 600 000 000"/></div>
+        <div class="field"><div class="field-label">Email</div><input type="text" id="ab-email" placeholder="correo@ejemplo.com"/></div>
+        <button class="btn btn-dark" onclick="addAbonado()" style="margin-top:4px">Registrar abonado</button>
+        <div class="alert alert-success" id="abonado-ok">Abonado registrado correctamente.</div>
+        <div class="alert alert-error"   id="abonado-err2">Error al registrar. Inténtalo de nuevo.</div>
+      </div>
+      <div id="abonados-list"><div class="loading">Cargando abonados...</div></div>
+    </div>
+
+    <div id="tab-conductores" style="display:none">
+
+      <!-- ADD DRIVER FORM -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="section-label" style="margin-top:0">Añadir conductor</div>
+        <div class="field"><div class="field-label">Nombre completo</div><input type="text" id="d-name" placeholder="Ej. Miguel García"/></div>
+        <div class="field"><div class="field-label">Marca y modelo</div><input type="text" id="d-vehicle" placeholder="Ej. Mercedes Clase S"/></div>
+        <div class="field"><div class="field-label">Matrícula del vehículo</div><input type="text" id="d-plate" placeholder="Ej. 1234 ABC" style="text-transform:uppercase"/></div>
+        <div class="field"><div class="field-label">Teléfono de contacto</div><input type="tel" id="d-phone" placeholder="+34 600 000 000"/></div>
+        <button class="btn btn-dark" onclick="addDriver()" style="margin-top:4px">Registrar conductor</button>
+        <div class="alert alert-success" id="driver-ok">Conductor registrado correctamente.</div>
+        <div class="alert alert-error"   id="driver-err">Error al registrar. Inténtalo de nuevo.</div>
+      </div>
+
+      <!-- DRIVERS LIST -->
+      <div id="drivers-list"><div class="loading">Cargando conductores...</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-safe"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────
+const PROJECT_ID = "topmobility";
+const API_KEY    = "AIzaSyBV5HzqGiYoekZqmT23iwE6zyomBX4CcZ4";
+const BASE      = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+const ADMIN_PW  = "calabaza1972";
+const DRIVERS   = [
+  "M. García — Berlina S-Class",
+  "R. López — SUV BMW X7",
+  "A. Romero — Minivan V-Class",
+  "J. Torres — Berlina Tesla S"
+];
+
+// ── FIRESTORE REST HELPERS ──────────────────────────────────────
+function toFS(obj) {
+  const fields = {};
+  for (const [k,v] of Object.entries(obj)) {
+    if (v === null || v === undefined) fields[k] = {nullValue: null};
+    else if (typeof v === 'boolean')   fields[k] = {booleanValue: v};
+    else if (typeof v === 'number')    fields[k] = {integerValue: v};
+    else                               fields[k] = {stringValue: String(v)};
+  }
+  return {fields};
+}
+
+function fromFS(doc) {
+  const out = {id: doc.name.split('/').pop()};
+  for (const [k,v] of Object.entries(doc.fields||{})) {
+    if (v.stringValue  !== undefined) out[k] = v.stringValue;
+    else if (v.booleanValue !== undefined) out[k] = v.booleanValue;
+    else if (v.integerValue !== undefined) out[k] = Number(v.integerValue);
+    else out[k] = null;
+  }
+  return out;
+}
+
+async function fsGet(col) {
+  const r = await fetch(`${BASE}/${col}?key=${API_KEY}`);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || r.status);
+  return (d.documents||[]).map(fromFS);
+}
+
+async function fsAdd(col, data) {
+  const r = await fetch(`${BASE}/${col}?key=${API_KEY}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(toFS(data))
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || r.status);
+  return fromFS(d);
+}
+
+async function fsUpdate(col, id, data) {
+  const fields = toFS(data).fields;
+  const mask   = Object.keys(fields).map(f=>'updateMask.fieldPaths='+f).join('&');
+  const r = await fetch(BASE + '/' + col + '/' + encodeURIComponent(id) + '?' + mask + '&key=' + API_KEY, {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({fields})
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || r.status);
+  return fromFS(d);
+}
+
+async function fsDel(col, id) {
+  const r = await fetch(BASE + '/' + col + '/' + encodeURIComponent(id) + '?key=' + API_KEY, {method:'DELETE'});
+  if (!r.ok) {
+    let msg = r.status;
+    try { const d = await r.json(); msg = d.error?.message || r.status; } catch(e){}
+    throw new Error(msg);
+  }
+}
+
+// ── STATE ───────────────────────────────────────────────────────
+let adminLoggedIn = false;
+let openNotifId   = null;
+let pollTimer     = null;
+let activeData    = [];
+let historyData   = [];
+let driversData   = [];
+
+// ── INIT ────────────────────────────────────────────────────────
+function init() {
+  const banner = document.getElementById('fb-status');
+  const txt    = document.getElementById('fb-status-text');
+  const dot    = document.getElementById('fb-dot');
+
+  txt.textContent = 'Iniciando...';
+
+  const url = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents/requests?pageSize=1&key=' + API_KEY;
+
+  fetch(url)
+    .then(function(r) {
+      return r.text().then(function(body) {
+        if (r.ok) {
+          banner.className = 'fb-banner ok';
+          dot.className = 'fb-dot fb-dot-ok';
+          txt.textContent = '✓ Base de datos conectada';
+          setTimeout(function(){ banner.style.display='none'; }, 3000);
+        } else {
+          banner.className = 'fb-banner err';
+          dot.className = 'fb-dot fb-dot-err';
+          txt.textContent = '⚠ Error ' + r.status + ': ' + body.slice(0,100);
+        }
+      });
+    })
+    .catch(function(e) {
+      banner.className = 'fb-banner err';
+      dot.className = 'fb-dot fb-dot-err';
+      txt.textContent = '⚠ Sin conexión: ' + e.message;
+    });
+}
+
+init();
+
+// ── POLLING (reemplaza tiempo real) ────────────────────────────
+async function poll() {
+  if (!adminLoggedIn) return;
+  try {
+    const [req, hist, drvs, abons] = await Promise.all([fsGet('requests'), fsGet('history'), fsGet('drivers'), fsGet('abonados')]);
+    req.sort((a,b)=> b.id > a.id ? 1 : -1);
+    hist.sort((a,b)=> b.id > a.id ? 1 : -1);
+    drvs.sort((a,b)=> (a.name||'') > (b.name||'') ? 1 : -1);
+    activeData  = req;
+    historyData = hist;
+    driversData = drvs;
+    abonadosData = abons;
+    renderRequests(req);
+    renderHistory(hist);
+    // Refresh drivers list if tab is active
+    if (document.getElementById('tab-conductores').style.display === 'block') renderDrivers(drvs);
+    if (document.getElementById('tab-abonados').style.display === 'block') renderAbonados(abons);
+    // Refresh driver panel if logged in
+    if (currentDriver && document.getElementById('view-driver').classList.contains('active')) renderDriverServices();
+    // Driver dropdown updated only on renderRequests (not every poll cycle)
+    document.getElementById('stat-total').textContent    = req.length;
+    document.getElementById('stat-pending').textContent  = req.filter(r=>r.status==='pending').length;
+    document.getElementById('stat-assigned').textContent = req.filter(r=>r.status==='assigned').length;
+    document.getElementById('stat-done').textContent     = hist.length;
+  } catch(e) {
+    console.error('poll error', e);
+  }
+}
+
+function startPolling() {
+  poll();
+  pollTimer = setInterval(poll, 5000);
+}
+
+function stopPolling() {
+  clearInterval(pollTimer);
+  pollTimer = null;
+}
+
+// ── AUTH ────────────────────────────────────────────────────────
+function doLogin() {
+  const pw  = document.getElementById('admin-pw').value;
+  const err = document.getElementById('login-error');
+  if (pw === ADMIN_PW) {
+    adminLoggedIn = true;
+    document.getElementById('admin-login').style.display    = 'none';
+    document.getElementById('admin-dashboard').style.display = 'block';
+    document.getElementById('topbar-right').innerHTML = '<button class="btn-logout" onclick="doLogout()">Salir</button>';
+    err.classList.remove('show');
+    startPolling();
+    requestPushPermission();
+  } else {
+    err.classList.add('show');
+    document.getElementById('admin-pw').value = '';
+  }
+}
+
+function doLogout() {
+  adminLoggedIn = false;
+  openNotifId   = null;
+  stopPolling();
+  document.getElementById('admin-login').style.display     = 'block';
+  document.getElementById('admin-dashboard').style.display = 'none';
+  document.getElementById('admin-pw').value                = '';
+  document.getElementById('topbar-right').innerHTML        = '';
+  document.getElementById('login-error').classList.remove('show');
+  switchRole('user');
+}
+
+// ── RENDER ──────────────────────────────────────────────────────
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function buildMsg(r) {
+  const flightLine = r.flight ? '\nNúmero de vuelo: ' + r.flight : '';
+  return `Estimado/a ${r.name},\n\nSu vehículo Topmobility está en camino.\n\nConductor: ${r.driver||'—'}\nMatrícula: ${r.plate||'—'}\nRecogida: ${r.pickup}${flightLine}\n\nGracias por confiar en Topmobility.`;
+}
+
+function renderRequests(list) {
+  const el = document.getElementById('tab-activos');
+  if (!list.length) { el.innerHTML = '<div class="empty">No hay solicitudes activas</div>'; return; }
+  el.innerHTML = '';
+  list.forEach(r => {
+    const isPending = r.status === 'pending';
+    const bClass = isPending ? 'badge-pending' : 'badge-assigned';
+    const bLabel = isPending ? 'Pendiente' : 'Asignado';
+    const dClass = isPending ? 'dot-p' : 'dot-a';
+    const driverList = driversData.length
+      ? driversData.map(d => d.name + ' — ' + d.vehicle)
+      : DRIVERS; // fallback to hardcoded if no drivers in DB yet
+    const savedDriver = pendingDrivers[r.id] || r.driver || '';
+    const dOpts = '<option value="">— Seleccionar conductor —</option>' +
+      driverList.map(d=>`<option value="${d}" ${savedDriver===d?'selected':''}>${d}</option>`).join('');
+    const isOpen = openNotifId === r.id;
+    const card   = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="rc-header">
+        <div><div class="rc-name">${esc(r.name)}</div><div class="rc-phone">${esc(r.phone)}</div></div>
+        <span class="badge ${bClass}"><span class="dot ${dClass}"></span>${bLabel}</span>
+      </div>
+      <div class="rc-row">Recogida: <span>${esc(r.pickup)}</span></div>
+      <div class="rc-row">Destino: <span>${esc(r.dest)}</span></div>
+      <div class="rc-row">Vehículo: <span>${esc(r.type)}</span></div>
+      <div class="rc-row">Hora: <span>${esc(r.time||'Sin especificar')}</span></div>
+      ${r.flight?`<div class="rc-row">Vuelo: <span>${esc(r.flight)}</span></div>`:''}
+      ${r.notes?`<div class="rc-row">Notas: <span>${esc(r.notes)}</span></div>`:''}
+      ${r.driver?`<div class="rc-row">Conductor: <span>${esc(r.driver)}</span></div>`:''}
+      <div class="divider"></div>
+      <div class="row-flex" style="margin-bottom:8px">
+        <select id="sel-${r.id}" style="flex:1;font-size:13px;padding:9px 10px" onchange="savePendingDriver('${r.id}',this.value)">${dOpts}</select>
+        <button class="btn-sm btn-sm-dark" onclick="assignDriver('${r.id}')">Asignar</button>
+        ${!isPending?`<button class="btn-sm btn-sm-green" onclick="markDone('${r.id}')">Completar</button>`:''}
+      </div>
+      ${!isPending?`
+      <div class="row-flex" style="margin-bottom:8px">
+        <input type="text" id="plate-${r.id}" placeholder="Matrícula · Ej. 1234 ABC" value="${esc(r.plate||'')}"
+          oninput="savePlate('${r.id}',this.value);refreshPreview('${r.id}',this.value)"
+          style="flex:1;font-family:var(--mono);letter-spacing:1px;font-size:14px;font-weight:500;text-transform:uppercase;padding:9px 12px" maxlength="10"/>
+        ${r.plate?`<span class="plate-display">${esc(r.plate)}</span>`:''}
+        <button class="btn-sm ${isOpen?'btn-sm-purple':'btn-sm-dark'}" onclick="toggleNotif('${r.id}')">Notificar</button>
+      </div>
+      ${r.notified?`<div style="margin-top:4px"><span class="badge badge-done">✓ Matrícula notificada</span></div>`:''}
+      <div id="notif-${r.id}" style="display:${isOpen?'block':'none'}">
+        <div class="notif-panel">
+          <div class="field-label" style="margin-bottom:8px">Vista previa del mensaje al cliente</div>
+          <div class="notif-preview"><div class="notif-preview-text" id="msg-preview-${r.id}">${esc(buildMsg(r))}</div></div>
+          <div class="row-flex" style="margin-top:10px">
+            <a id="wa-link-${r.id}" href="#" onclick="return prepareWa('${r.id}', this)"
+               style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+                      padding:8px 14px;background:#25D366;color:#fff;border-radius:var(--radius-sm);
+                      font-size:13px;font-weight:500;text-decoration:none;font-family:var(--font)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.564 4.144 1.546 5.879L.057 23.522a.5.5 0 00.622.607l5.848-1.53A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.907 0-3.7-.512-5.24-1.406l-.375-.217-3.892 1.02 1.037-3.786-.233-.391A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+              Enviar por WhatsApp
+            </a>
+            <button class="btn-outline-sm" onclick="toggleNotif('${r.id}')">Cancelar</button>
+          </div>
+        </div>
+      </div>`:''}
+    `;
+    el.appendChild(card);
+
+  });
+}
+
+function renderHistory(list, elId) {
+  const el = document.getElementById(elId || 'requests-history');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="empty">No hay viajes completados aún</div>'; return; }
+  el.innerHTML = '';
+  const isAdmin = !elId || elId === 'requests-history';
+  list.forEach(function(h) {
+    const card = document.createElement('div');
+    card.className = 'hist-card';
+    card.style.cssText = 'flex-direction:column;gap:8px';
+
+    const topRow = document.createElement('div');
+    topRow.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start';
+
+    const left = document.createElement('div');
+    left.className = 'hist-left';
+    left.innerHTML =
+      '<div class="hist-name">' + esc(h.name) + '</div>' +
+      '<div class="hist-detail">' + esc(h.phone||'') + '</div>' +
+      '<div class="hist-detail">' + esc(h.pickup) + ' → ' + esc(h.dest) + '</div>' +
+      '<div class="hist-detail">' + esc(h.driver||'') + '</div>' +
+      (h.abonado ? '<div style="margin-top:4px"><span class="badge badge-assigned" style="font-size:11px">⭐ ' + esc(h.abonado) + '</span></div>' : '') +
+      (h.notified ? '<div style="margin-top:4px"><span class="badge badge-done" style="font-size:11px">✓ Notificado</span></div>' : '');
+
+    const right = document.createElement('div');
+    right.className = 'hist-right';
+    right.innerHTML =
+      '<div class="hist-plate">' + esc(h.plate||'—') + '</div>' +
+      (h.amount ? '<div style="font-size:16px;font-weight:500;color:var(--green);margin-top:4px">' + Number(h.amount).toFixed(2) + ' €</div>' : '') +
+      '<div class="hist-time">' + esc(h.time||'') + '</div>' +
+      '<div class="hist-time">✓ ' + esc(h.completedAt||'') + '</div>';
+
+    topRow.appendChild(left);
+    topRow.appendChild(right);
+    card.appendChild(topRow);
+
+    if (isAdmin) {
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Eliminar registro';
+      delBtn.style.cssText = 'width:100%;padding:7px;background:transparent;border:0.5px solid var(--border2);color:var(--red-text);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font);cursor:pointer;margin-top:4px';
+      (function(id){ delBtn.onclick = function(){ deleteHistory(id); }; })(h.id);
+      card.appendChild(delBtn);
+    }
+
+    el.appendChild(card);
+  });
+}
+
+// ── ACTIONS ─────────────────────────────────────────────────────
+async function submitRequest() {
+  const name   = document.getElementById('u-name').value.trim();
+  const phone  = document.getElementById('u-phone').value.trim();
+  const pickup = document.getElementById('u-pickup').value.trim();
+  const dest   = document.getElementById('u-dest').value.trim();
+  const type   = document.getElementById('u-type').value;
+  const time   = document.getElementById('u-time').value;
+  const notes  = document.getElementById('u-notes').value.trim();
+  const flight  = document.getElementById('u-flight').value.trim().toUpperCase();
+  const abonado = (document.getElementById('u-abonado')||{value:''}).value.trim().toUpperCase();
+  const train   = (document.getElementById('u-train')||{value:''}).value.trim().toUpperCase();
+  if (!name||!pickup||!dest) { alert('Por favor rellena nombre, recogida y destino.'); return; }
+  const timeLabel = time ? new Date(time).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Sin especificar';
+  const ok  = document.getElementById('success-msg');
+  const err = document.getElementById('error-msg');
+  try {
+    await fsAdd('requests',{name,phone,pickup,dest,type,time:timeLabel,notes,flight,abonado,train,status:'pending',driver:'',plate:'',notified:false});
+    ok.classList.add('show'); err.classList.remove('show');
+    notifyAdmin(name, pickup, dest);
+    setTimeout(()=>ok.classList.remove('show'),4000);
+    ['u-name','u-phone','u-pickup','u-dest','u-notes','u-flight','u-train'].forEach(id=>document.getElementById(id).value='');
+    if(document.getElementById('u-abonado')) document.getElementById('u-abonado').value='';
+    setUserType(null);
+    document.getElementById('u-time').value='';
+  } catch(e) {
+    err.classList.add('show'); ok.classList.remove('show');
+    console.error(e);
+  }
+}
+
+async function assignDriver(id) {
+  const driverLabel = document.getElementById('sel-'+id).value;
+  if (!driverLabel) { alert('Por favor selecciona un conductor.'); return; }
+  const driverRecord = driversData.find(d => (d.name + ' — ' + d.vehicle) === driverLabel);
+  const autoPlate   = driverRecord ? (driverRecord.plate||'') : '';
+  const driverPhone = driverRecord ? (driverRecord.phone||'') : '';
+
+  await fsUpdate('requests', id, {driver: driverLabel, status:'assigned', plate: autoPlate});
+  delete pendingDrivers[id]; // clear saved selection
+  await poll();
+
+  if (driverPhone) {
+    const req = activeData.find(r => r.id === id) || {};
+    const lines = [
+      '🚖 *Nuevo servicio Topmobility*',
+      '',
+      '*Cliente:* '  + (req.name||''),
+      '*Teléfono:* ' + (req.phone||''),
+      '*Recogida:* ' + (req.pickup||''),
+      '*Destino:* '  + (req.dest||''),
+      '*Vehículo:* ' + (req.type||''),
+      '*Hora:* '     + (req.time||''),
+      ...(req.flight ? ['*Vuelo:* ' + req.flight] : [])
+    ];
+    if (req.notes) lines.push('*Notas:* ' + req.notes);
+    const msg   = lines.join('\n');
+    const raw   = driverPhone.replace(/[\s\-\+\(\)]/g,'');
+    const phone = raw.startsWith('34') ? raw : (raw.length===9 ? '34'+raw : raw);
+    window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(msg), '_blank');
+  }
+}
+
+const plateTimer = {};
+function savePlate(id, val) {
+  clearTimeout(plateTimer[id]);
+  plateTimer[id] = setTimeout(async()=>{
+    await fsUpdate('requests', id, {plate: val.toUpperCase()});
+  }, 800);
+}
+
+function prepareWa(id, linkEl) {
+  const pi = document.getElementById('plate-'+id);
+  if (!pi || !pi.value.trim()) { alert('Introduce primero la matrícula.'); return false; }
+  const req = activeData.find(r => r.id === id);
+  if (!req) return false;
+  const plateVal = pi.value.trim().toUpperCase();
+  const reqWithPlate = { ...req, plate: plateVal };
+  const msg = buildMsg(reqWithPlate);
+  const raw = (req.phone || '').replace(/[\s\-\+\(\)]/g, '');
+  const phone = raw.startsWith('34') ? raw : (raw.length === 9 ? '34' + raw : raw);
+  const waUrl = phone
+    ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg)
+    : 'https://wa.me/?text=' + encodeURIComponent(msg);
+  linkEl.href = waUrl;
+  fsUpdate('requests', id, { plate: plateVal, notified: true }).then(() => poll()).catch(() => {});
+  openNotifId = null;
+  return true;
+}
+
+function refreshPreview(id, plateVal) {
+  const req = activeData.find(r => r.id === id);
+  if (!req) return;
+  const el = document.getElementById('msg-preview-' + id);
+  if (!el) return;
+  const updated = { ...req, plate: plateVal.toUpperCase() };
+  el.textContent = buildMsg(updated);
+  const link = document.getElementById('wa-link-' + id);
+  if (link) {
+    const raw = (req.phone || '').replace(/[\s\-\+\(\)]/g, '');
+    const phone = raw.startsWith('34') ? raw : (raw.length === 9 ? '34' + raw : raw);
+    link.href = phone
+      ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent(buildMsg(updated))
+      : 'https://wa.me/?text=' + encodeURIComponent(buildMsg(updated));
+  }
+}
+
+// Store driver selections across poll cycles
+const pendingDrivers = {};
+function savePendingDriver(id, val) {
+  pendingDrivers[id] = val;
+}
+
+function toggleNotif(id) {
+  openNotifId = openNotifId === id ? null : id;
+  const panel = document.getElementById('notif-' + id);
+  if (panel) panel.style.display = openNotifId === id ? 'block' : 'none';
+}
+
+async function deleteHistory(id) {
+  if (!confirm('¿Eliminar este registro del historial?')) return;
+  await fsDel('history', id);
+  await poll();
+}
+
+async function markDone(id) {
+  const { } = {};
+  const allReq = await fsGet('requests');
+  const req = allReq.find(r => r.id === id);
+  if (!req) return;
+  const now = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  await fsAdd('history',{ ...req, id: undefined, completedAt: 'Hoy ' + now });
+  await fsDel('requests', id);
+  await poll();
+}
+
+// ── DRIVERS ─────────────────────────────────────────────────────
+async function addDriver() {
+  const name    = document.getElementById('d-name').value.trim();
+  const vehicle = document.getElementById('d-vehicle').value.trim();
+  const plate   = document.getElementById('d-plate').value.trim().toUpperCase();
+  const phone   = document.getElementById('d-phone').value.trim();
+  if (!name || !vehicle || !plate) { alert('Por favor rellena nombre, vehículo y matrícula.'); return; }
+  const ok  = document.getElementById('driver-ok');
+  const err = document.getElementById('driver-err');
+  try {
+    await fsAdd('drivers', { name, vehicle, plate, phone, active: true });
+    ok.classList.add('show'); err.classList.remove('show');
+    setTimeout(() => ok.classList.remove('show'), 3000);
+    ['d-name','d-vehicle','d-plate','d-phone'].forEach(id => document.getElementById(id).value = '');
+    await poll();
+  } catch(e) {
+    err.classList.add('show'); ok.classList.remove('show');
+  }
+}
+
+async function deleteDriver(id) {
+  if (!confirm('¿Eliminar este conductor?')) return;
+  await fsDel('drivers', id);
+  await poll();
+}
+
+function renderDrivers(list) {
+  const el = document.getElementById('drivers-list');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="empty">No hay conductores registrados</div>'; return; }
+  el.innerHTML = '';
+  list.forEach(d => {
+    el.innerHTML += `
+      <div class="card" style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-size:15px;font-weight:500;color:var(--text)">${esc(d.name)}</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px">${esc(d.vehicle)}</div>
+          </div>
+          <button onclick="deleteDriver('${d.id}')" style="background:transparent;border:0.5px solid var(--border2);color:var(--muted);border-radius:var(--radius-sm);padding:5px 10px;font-size:12px;cursor:pointer">Eliminar</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:3px">MATRÍCULA</div>
+            <div style="font-family:var(--mono);font-size:14px;font-weight:500">${esc(d.plate)}</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:3px">TELÉFONO</div>
+            <div style="font-size:14px">${esc(d.phone||'—')}</div>
+          </div>
+        </div>
+      </div>`;
+  });
+}
+
+function updateDriverSelect(list) {
+  document.querySelectorAll('[id^="sel-"]').forEach(sel => {
+    const currentVal = sel.value;
+    if (list.length) {
+      sel.innerHTML = list.map(d =>
+        `<option value="${esc(d.name)} — ${esc(d.vehicle)}" ${currentVal === d.name + ' — ' + d.vehicle ? 'selected' : ''}>${esc(d.name)} — ${esc(d.vehicle)}</option>`
+      ).join('');
+    }
+    if (currentVal) sel.value = currentVal;
+  });
+}
+
+// ── DRIVER PORTAL ───────────────────────────────────────────────
+let currentDriver = null;
+
+async function driverLogin() {
+  const plateVal = document.getElementById('drv-plate-input').value.trim().toUpperCase();
+  if (!plateVal) return;
+  const errEl = document.getElementById('drv-login-err');
+  errEl.style.display = 'none';
+  const allDrivers = driversData.length ? driversData : await fsGet('drivers');
+  const found = allDrivers.find(d => (d.plate||'').toUpperCase() === plateVal);
+  if (!found) { errEl.style.display = 'block'; return; }
+  currentDriver = found;
+  document.getElementById('driver-login-card').style.display = 'none';
+  document.getElementById('driver-panel').style.display = 'block';
+  document.getElementById('drv-welcome').textContent = 'Hola, ' + found.name;
+  document.getElementById('drv-vehicle').textContent = found.vehicle + ' · ' + found.plate;
+  renderDriverServices();
+}
+
+function driverLogout() {
+  currentDriver = null;
+  document.getElementById('driver-login-card').style.display = 'block';
+  document.getElementById('driver-panel').style.display = 'none';
+  document.getElementById('drv-plate-input').value = '';
+}
+
+async function renderDriverServices() {
+  if (!currentDriver) return;
+  const driverLabel = currentDriver.name + ' — ' + currentDriver.vehicle;
+  const allReq  = activeData.length  ? activeData  : await fsGet('requests');
+  const allHist = historyData.length ? historyData : await fsGet('history');
+  const myActive    = allReq.filter(r  => r.driver === driverLabel && r.status === 'assigned');
+  const myCompleted = allHist.filter(h => h.driver === driverLabel);
+  const actEl = document.getElementById('tab-drv-activos');
+  if (!myActive.length) { actEl.innerHTML = '<div class="empty">No tienes servicios asignados</div>'; }
+  else {
+    actEl.innerHTML = '';
+    myActive.forEach(r => {
+      actEl.innerHTML += `
+        <div class="card" style="margin-bottom:10px">
+          <div class="rc-header">
+            <div><div class="rc-name">${esc(r.name)}</div><div class="rc-phone">${esc(r.phone||'')}</div></div>
+            <span class="badge badge-assigned"><span class="dot dot-a"></span>Asignado</span>
+          </div>
+          <div class="rc-row">Recogida: <span>${esc(r.pickup)}</span></div>
+          <div class="rc-row">Destino: <span>${esc(r.dest)}</span></div>
+          <div class="rc-row">Vehículo: <span>${esc(r.type)}</span></div>
+          <div class="rc-row">Hora: <span>${esc(r.time||'Sin especificar')}</span></div>
+          ${r.flight?`<div class="rc-row">Vuelo: <a href="https://www.google.com/search?q=vuelo+${encodeURIComponent(r.flight)}" target="_blank" style="color:var(--blue-text);font-weight:500;text-decoration:none">${esc(r.flight)} 🔍</a></div>`:''}
+          ${r.notes?`<div class="rc-row">Notas: <span>${esc(r.notes)}</span></div>`:''}
+          <div class="divider"></div>
+          <div class="row-flex" style="gap:8px;margin-top:4px">
+            <input type="number" id="amount-${r.id}" placeholder="Importe €" min="0" step="0.01"
+              style="flex:1;padding:9px 12px;font-size:15px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);color:var(--text);font-family:var(--mono)"/>
+            <button class="btn-sm btn-sm-green" onclick="driverComplete('${r.id}')">Completar servicio</button>
+          </div>
+        </div>`;
+    });
+  }
+  renderHistory(myCompleted, 'tab-drv-completados');
+}
+
+async function driverComplete(id) {
+  const amountEl = document.getElementById('amount-' + id);
+  const amount = amountEl ? parseFloat(amountEl.value) : 0;
+  if (!amount || amount <= 0) { alert('Por favor introduce el importe del servicio.'); return; }
+  if (!confirm('¿Confirmar servicio completado por ' + amount.toFixed(2) + ' €?')) return;
+
+  const allReq = activeData.length ? activeData : await fsGet('requests');
+  const req = allReq.find(r => r.id === id);
+  if (!req) return;
+
+  const now = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  await fsAdd('history',{ ...req, id: undefined, completedAt: 'Hoy ' + now, amount: amount });
+  await fsDel('requests', id);
+  await poll();
+  if (currentDriver) renderDriverServices();
+}
+
+// ── USER TYPE SELECTOR ──────────────────────────────────────────
+let abonadosData = [];
+
+function setUserType(type) {
+  const selector = document.getElementById('subscriber-selector');
+  const form     = document.getElementById('request-form');
+  const aboLogin = document.getElementById('abonado-login');
+  const btnNorm  = document.getElementById('btn-type-normal');
+  const btnAbon  = document.getElementById('btn-type-abonado');
+  const aboField = document.getElementById('u-abonado');
+
+  if (!type) {
+    // Reset
+    if (selector) selector.style.display = 'block';
+    if (form) form.style.display = 'none';
+    if (aboLogin) aboLogin.style.display = 'none';
+    if (aboField) aboField.value = '';
+    if (btnNorm) { btnNorm.style.background=''; btnNorm.style.color=''; btnNorm.style.borderColor=''; }
+    if (btnAbon) { btnAbon.style.background=''; btnAbon.style.color=''; btnAbon.style.borderColor=''; }
+    return;
+  }
+  if (type === 'normal') {
+    if (aboField) aboField.value = '';
+    if (aboLogin) aboLogin.style.display = 'none';
+    if (form) form.style.display = 'block';
+    if (btnNorm) { btnNorm.style.background='var(--dark)'; btnNorm.style.color='#fff'; }
+    if (btnAbon) { btnAbon.style.background=''; btnAbon.style.color=''; }
+  } else if (type === 'abonado') {
+    if (aboLogin) aboLogin.style.display = 'block';
+    if (form) form.style.display = 'none';
+    if (btnAbon) { btnAbon.style.background='var(--dark)'; btnAbon.style.color='#fff'; }
+    if (btnNorm) { btnNorm.style.background=''; btnNorm.style.color=''; }
+  }
+}
+
+async function verifyAbonado() {
+  const code = (document.getElementById('u-abonado-code')||{value:''}).value.trim().toUpperCase();
+  const errEl = document.getElementById('abonado-err');
+  if (!code) return;
+  errEl.style.display = 'none';
+  const all = abonadosData.length ? abonadosData : await fsGet('abonados');
+  const found = all.find(a => (a.code||'').toUpperCase() === code);
+  if (!found) { errEl.style.display = 'block'; return; }
+  document.getElementById('u-abonado').value = found.code;
+  document.getElementById('u-name').value    = found.name || '';
+  document.getElementById('u-phone').value   = found.phone || '';
+  document.getElementById('request-form').style.display = 'block';
+}
+
+// ── ABONADOS MANAGEMENT ──────────────────────────────────────────
+async function addAbonado() {
+  const name  = document.getElementById('ab-name').value.trim();
+  const code  = document.getElementById('ab-code').value.trim().toUpperCase();
+  const phone = document.getElementById('ab-phone').value.trim();
+  const email = document.getElementById('ab-email').value.trim();
+  if (!name || !code) { alert('Por favor rellena nombre y código.'); return; }
+  const ok  = document.getElementById('abonado-ok');
+  const err = document.getElementById('abonado-err2');
+  try {
+    await fsAdd('abonados', { name, code, phone, email });
+    ok.classList.add('show'); err.classList.remove('show');
+    setTimeout(() => ok.classList.remove('show'), 3000);
+    ['ab-name','ab-code','ab-phone','ab-email'].forEach(id => document.getElementById(id).value = '');
+    await poll();
+  } catch(e) {
+    err.classList.add('show'); ok.classList.remove('show');
+  }
+}
+
+async function deleteAbonado(id) {
+  if (!confirm('¿Eliminar este abonado?')) return;
+  await fsDel('abonados', id);
+  await poll();
+}
+
+function renderAbonados(list) {
+  const el = document.getElementById('abonados-list');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div class="empty">No hay abonados registrados</div>'; return; }
+  el.innerHTML = '';
+  // Update filter dropdown
+  const filterSel = document.getElementById('pdf-abonado-filter');
+  if (filterSel) {
+    filterSel.innerHTML = '<option value="">Todos</option>' + list.map(a => '<option value="'+a.code+'">'+a.name+' ('+a.code+')</option>').join('');
+  }
+  list.forEach(a => {
+    const d = document.createElement("div");
+    d.className = "card";
+    d.style.marginBottom = "10px";
+    d.innerHTML =
+      "<div style=\"display:flex;justify-content:space-between;align-items:center\">" +
+        "<div>" +
+          "<div style=\"font-size:15px;font-weight:500\">" + esc(a.name) + "</div>" +
+          "<div style=\"font-family:var(--mono);font-size:13px;color:var(--blue-text);margin-top:2px\">" + esc(a.code) + "</div>" +
+          "<div style=\"font-size:12px;color:var(--muted);margin-top:2px\">" + esc(a.phone||"") + (a.email ? " · " + esc(a.email) : "") + "</div>" +
+        "</div>" +
+        "<button class=\"del-ab-btn\" style=\"background:transparent;border:0.5px solid var(--border2);color:var(--muted);border-radius:var(--radius-sm);padding:5px 10px;font-size:12px;cursor:pointer\">Eliminar</button>" +
+      "</div>";
+    (function(id){ d.querySelector(".del-ab-btn").onclick = function(){ deleteAbonado(id); }; })(a.id);
+    el.appendChild(d);
+  });
+}
+
+// ── CLEAR HISTORY ────────────────────────────────────────────────
+async function clearAllHistory() {
+  if (!confirm('¿Eliminar TODO el historial de servicios? Esta acción no se puede deshacer.')) return;
+  const all = await fsGet('history');
+  await Promise.all(all.map(h => fsDel('history', h.id)));
+  await poll();
+}
+
+async function driverClearHistory() {
+  if (!currentDriver) return;
+  if (!confirm('¿Eliminar tu historial de servicios completados?')) return;
+  const driverLabel = currentDriver.name + ' — ' + currentDriver.vehicle;
+  const all = await fsGet('history');
+  const mine = all.filter(h => h.driver === driverLabel);
+  await Promise.all(mine.map(h => fsDel('history', h.id)));
+  await poll();
+  renderDriverServices();
+}
+
+// ── PDF EXPORT ───────────────────────────────────────────────────
+function generatePDF(abonadosOnly) {
+  const aboFilter = abonadosOnly ? (document.getElementById('pdf-abonado-filter')||{value:''}).value : '';
+  const dateFrom  = abonadosOnly ? (document.getElementById('pdf-date-from')||{value:''}).value : '';
+  const dateTo    = abonadosOnly ? (document.getElementById('pdf-date-to')||{value:''}).value : '';
+  let data = historyData;
+  if (abonadosOnly) data = data.filter(h => h.abonado);
+  if (aboFilter) data = data.filter(h => (h.abonado||'').toUpperCase() === aboFilter.toUpperCase());
+  if (dateFrom) data = data.filter(h => (h.completedAt||'') >= dateFrom);
+  if (dateTo)   data = data.filter(h => (h.completedAt||'') <= dateTo);
+  if (!data.length) { alert('No hay servicios para exportar con los filtros seleccionados.'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  // Header
+  doc.setFillColor(26, 26, 46);
+  doc.rect(0, 0, 210, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TOPMOBILITY', 14, 12);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(180, 180, 200);
+  doc.text('Informe de servicios completados', 14, 20);
+  const fecha = new Date().toLocaleDateString('es-ES', {day:'2-digit',month:'long',year:'numeric'});
+  doc.text('Generado: ' + fecha, 14, 26);
+
+  // Total amount
+  const total = data.reduce((sum, h) => sum + (Number(h.amount)||0), 0);
+
+  // Table
+  const rows = data.map(h => [
+    h.completedAt || '—',
+    h.name || '—',
+    h.phone || '—',
+    (h.pickup||'').slice(0,22),
+    (h.dest||'').slice(0,22),
+    h.driver ? h.driver.split(' — ')[0] : '—',
+    h.plate || '—',
+    h.amount ? Number(h.amount).toFixed(2) + ' €' : '—'
+  ]);
+
+  doc.autoTable({
+    startY: 34,
+    head: [['Fecha', 'Cliente', 'Teléfono', 'Recogida', 'Destino', 'Conductor', 'Matrícula', 'Importe']],
+    body: rows,
+    styles: { fontSize: 8, cellPadding: 3, textColor: [30,30,50] },
+    headStyles: { fillColor: [26,26,46], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+    alternateRowStyles: { fillColor: [245, 245, 248] },
+    columnStyles: {
+      0: { cellWidth: 22 },
+      1: { cellWidth: 28 },
+      2: { cellWidth: 24 },
+      3: { cellWidth: 30 },
+      4: { cellWidth: 30 },
+      5: { cellWidth: 22 },
+      6: { cellWidth: 18 },
+      7: { cellWidth: 16, halign: 'right' }
+    },
+    margin: { left: 14, right: 14 },
+    didDrawPage: function(data) {
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text('Topmobility · Servicio premium Madrid', 14, doc.internal.pageSize.height - 8);
+      doc.text('Pág. ' + data.pageNumber, 196, doc.internal.pageSize.height - 8, { align: 'right' });
+    }
+  });
+
+  // Total row
+  const finalY = doc.lastAutoTable.finalY + 6;
+  doc.setFillColor(26, 26, 46);
+  doc.roundedRect(130, finalY, 66, 10, 2, 2, 'F');
+  doc.setTextColor(255);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TOTAL: ' + total.toFixed(2) + ' €', 163, finalY + 6.5, { align: 'center' });
+
+  doc.save('topmobility-servicios-' + new Date().toISOString().slice(0,10) + '.pdf');
+}
+
+// ── ABONADOS HISTORY ────────────────────────────────────────────
+function renderAbonadosHistory() {
+  const aboFilter  = (document.getElementById('pdf-abonado-filter')||{value:''}).value;
+  const dateFrom   = (document.getElementById('pdf-date-from')||{value:''}).value;
+  const dateTo     = (document.getElementById('pdf-date-to')||{value:''}).value;
+  let filtered = historyData.filter(h => h.abonado);
+  if (aboFilter) filtered = filtered.filter(h => (h.abonado||'').toUpperCase() === aboFilter.toUpperCase());
+  if (dateFrom)  filtered = filtered.filter(h => (h.completedAt||'') >= dateFrom);
+  if (dateTo)    filtered = filtered.filter(h => (h.completedAt||'') <= dateTo);
+  renderHistory(filtered, 'tab-abonados-hist-list');
+}
+
+// ── UI ───────────────────────────────────────────────────────────
+function switchRole(role) {
+  document.querySelectorAll('.tab-nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('btn-'+role).classList.add('active');
+  document.getElementById('view-'+role).classList.add('active');
+  if (role === 'driver' && currentDriver) renderDriverServices();
+}
+
+function switchInnerTab(tab, btn) {
+  const parent = btn.closest('.view, #driver-panel');
+  if (parent) {
+    parent.querySelectorAll('.inner-tab').forEach(b => b.classList.remove('active'));
+  } else {
+    document.querySelectorAll('.inner-tab').forEach(b => b.classList.remove('active'));
+  }
+  btn.classList.add('active');
+  if (['activos','historial','abonados-hist','conductores','abonados'].includes(tab)) {
+    document.getElementById('tab-activos').style.display         = tab==='activos'       ? 'block':'none';
+    document.getElementById('tab-historial').style.display       = tab==='historial'     ? 'block':'none';
+    document.getElementById('tab-abonados-hist').style.display   = tab==='abonados-hist' ? 'block':'none';
+    document.getElementById('tab-conductores').style.display     = tab==='conductores'   ? 'block':'none';
+    document.getElementById('tab-abonados').style.display        = tab==='abonados'      ? 'block':'none';
+    if (tab==='conductores') renderDrivers(driversData);
+    if (tab==='abonados') renderAbonados(abonadosData);
+    if (tab==='abonados-hist') renderAbonadosHistory();
+  }
+  if (['drv-activos','drv-completados'].includes(tab)) {
+    document.getElementById('tab-drv-activos').style.display     = tab==='drv-activos'     ? 'block':'none';
+    document.getElementById('tab-drv-completados').style.display = tab==='drv-completados' ? 'block':'none';
+  }
+}
+
+// ── PUSH ─────────────────────────────────────────────────────────
+async function requestPushPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') await Notification.requestPermission();
+}
+
+const NTFY_TOPIC = 'topmobility-admin-mgn150';
+
+async function notifyAdmin(name, pickup, dest) {
+  const msg = name + ' · ' + pickup + ' → ' + dest;
+  try {
+    const r = await fetch('https://ntfy.sh/' + NTFY_TOPIC, {
+      method: 'POST',
+      headers: {
+        'Title': 'Nueva solicitud Topmobility',
+        'Priority': 'urgent',
+        'Tags': 'taxi',
+        'Content-Type': 'text/plain; charset=utf-8'
+      },
+      body: msg
+    });
+    console.log('ntfy status:', r.status);
+  } catch(e) {
+    console.error('ntfy error:', e);
+  }
+}
+
+if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone)
+  document.getElementById('install-banner').style.display='flex';
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault(); deferredPrompt=e;
+  const b=document.getElementById('install-banner');
+  b.innerHTML=`<span>Instala la app Topmobility</span><button onclick="installPWA()">Instalar</button><button class="close-x" onclick="this.parentElement.style.display='none'">✕</button>`;
+  b.style.display='flex';
+});
+function installPWA(){ if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; document.getElementById('install-banner').style.display='none'; }); } }
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) { r.unregister(); });
+  });
+}
+</script>
+</body>
+</html>
