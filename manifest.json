@@ -1,0 +1,21 @@
+{
+  "name": "Topmobility",
+  "short_name": "Topmobility",
+  "description": "Servicio oficial de taxis premium en Madrid",
+  "start_url": "/Topmobility/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#1a1a2e",
+  "orientation": "portrait",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "logo-tm.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "transportation"],
+  "screenshots": []
+}
