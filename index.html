@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Topmobility"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="logo-tm.png"/>
+  <title>Topmobility</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
+    :root {
+      --bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;
+      --dark:#1a1a2e;--dark2:#2a2a4e;
+      --text:#1c1c1c;--muted:#888780;
+      --border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);
+      --green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;
+      --amber-bg:#FAEEDA;--amber-text:#854F0B;
+      --blue-bg:#E6F1FB;--blue-text:#185FA5;
+      --red-bg:#FCEBEB;--red-text:#A32D2D;
+      --radius:12px;--radius-sm:8px;
+      --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+    /* SPLASH */
+    #splash{position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.7s ease}
+    #splash.hide{opacity:0;pointer-events:none}
+    #splash img{width:200px;max-width:65vw;animation:splashIn 0.9s ease forwards}
+    @keyframes splashIn{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}
+    #splash-sub{color:rgba(255,255,255,0.3);font-size:11px;letter-spacing:3px;margin-top:18px;text-transform:uppercase;font-family:var(--font)}
+
+    /* TRACKING PANEL */
+    #tracking-panel{position:fixed;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column}
+    #tracking-panel.open{display:flex}
+    .tracking-header{background:var(--dark);padding:env(safe-area-inset-top,16px) 16px 16px;display:flex;align-items:center;gap:12px}
+    .tracking-back{background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px;line-height:1}
+    .tracking-title{color:#fff;font-size:15px;font-weight:500;flex:1}
+    #tracking-map{flex:1;background:#1a1a2e;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:300px}
+    #tracking-map iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
+    .tracking-info{background:var(--surface);padding:16px;border-top:0.5px solid var(--border)}
+    .tracking-driver-name{font-size:15px;font-weight:500;margin-bottom:4px}
+    .tracking-status{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+    .tracking-dot{width:8px;height:8px;border-radius:50%;background:#639922;flex-shrink:0;animation:tpulse 1.5s infinite}
+    @keyframes tpulse{0%,100%{opacity:1}50%{opacity:0.35}}
+    .map-placeholder{text-align:center;color:rgba(255,255,255,0.5);font-size:14px;padding:20px}
+    .coord-display{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,0.5);margin-top:8px}
+
+    .topbar{background:var(--dark);padding:env(safe-area-inset-top,0) 0 0;position:sticky;top:0;z-index:100}
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+    .logo{font-size:16px;font-weight:500;color:#fff;letter-spacing:1px}
+    .logo-sub{font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px}
+    .lang-toggle{display:flex;background:rgba(255,255,255,0.1);border-radius:20px;padding:2px;gap:2px}
+    .lang-btn{padding:5px 10px;border-radius:18px;border:none;font-size:16px;cursor:pointer;background:transparent;opacity:0.5;transition:all 0.15s;line-height:1}
+    .lang-btn.active{background:rgba(255,255,255,0.2);opacity:1}
+
+    .fb-banner{font-size:12px;padding:8px 16px;display:flex;align-items:center;gap:8px}
+    .fb-banner.ok{background:var(--green-bg);color:var(--green-text)}
+    .fb-banner.warn{background:var(--amber-bg);color:var(--amber-text)}
+    .fb-banner.err{background:var(--red-bg);color:var(--red-text)}
+    .fb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .fb-dot-ok{background:#639922}.fb-dot-warn{background:#EF9F27}.fb-dot-err{background:#c0392b}
+
+    .view{padding:20px 16px 100px}
+    .section-label{font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:20px 0 10px}
+    .section-label:first-child{margin-top:0}
+    .card{background:var(--surface);border-radius:var(--radius);border:0.5px solid var(--border);padding:16px;margin-bottom:10px}
+    .field{margin-bottom:14px}
+    .field-label{font-size:12px;color:var(--muted);margin-bottom:5px}
+    input[type=text],input[type=tel],input[type=datetime-local],select,textarea{width:100%;padding:12px 14px;font-size:15px;font-family:var(--font);border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);color:var(--text);appearance:none;-webkit-appearance:none;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--dark);box-shadow:0 0 0 3px rgba(26,26,46,0.08)}
+    textarea{resize:none;height:80px;line-height:1.5}
+    select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+    .btn{width:100%;padding:14px;font-size:15px;font-family:var(--font);font-weight:500;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.12s}
+    .btn:active{transform:scale(0.98)}.btn-dark{background:var(--dark);color:#fff}
+    .btn-sm{padding:8px 14px;font-size:13px;font-family:var(--font);font-weight:500;border:none;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;transition:all 0.12s}
+    .btn-sm-dark{background:var(--dark);color:#fff}
+    .alert{border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;margin-top:12px;display:none}
+    .alert.show{display:block}
+    .alert-success{background:var(--green-bg);color:var(--green-text)}
+    .alert-error{background:var(--red-bg);color:var(--red-text)}
+    .bottom-safe{height:env(safe-area-inset-bottom,0)}
+    .install-banner{background:var(--dark2);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+    .install-banner button{background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-family:var(--font);cursor:pointer}
+    .close-x{background:transparent!important;color:rgba(255,255,255,0.5)!important;font-size:18px!important;padding:0 4px!important}
+    .admin-link{display:block;text-align:center;padding:16px;color:var(--muted);font-size:13px;text-decoration:none;margin-top:8px}
+    .admin-link span{color:var(--dark);font-weight:500}
+  </style>
+</head>
+<body>
+
+<div id="splash">
+  <img src="logo-tm.png" onerror="this.style.display='none'" alt="TM"/>
+  <div id="splash-sub">Topmobility</div>
+</div>
+
+<!-- TRACKING PANEL -->
+<div id="tracking-panel">
+  <div class="tracking-header">
+    <button class="tracking-back" onclick="closeTracking()">&#8592;</button>
+    <div class="tracking-title">Su conductor está en camino</div>
+  </div>
+  <div id="tracking-map">
+    <div class="map-placeholder">
+      <div style="font-size:48px;margin-bottom:12px">📍</div>
+      <div id="tracking-map-text">Esperando ubicación del conductor...</div>
+      <div class="coord-display" id="tracking-coords"></div>
+      <div style="margin-top:20px">
+        <a id="tracking-gmaps-link" href="#" target="_blank" style="display:inline-block;padding:10px 20px;background:#4285F4;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500">Ver en Google Maps</a>
+      </div>
+    </div>
+  </div>
+  <div class="tracking-info">
+    <div class="tracking-driver-name" id="tracking-driver-name"></div>
+    <div class="tracking-status"><span class="tracking-dot"></span><span id="tracking-status-text">Actualizando...</span></div>
+    <div style="margin-top:12px">
+      <button onclick="closeTracking()" style="width:100%;padding:10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;font-size:13px;font-family:var(--font);cursor:pointer">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="install-banner" id="install-banner" style="display:none">
+  <span id="ib-text">Instala Topmobility: pulsa <strong>Compartir</strong> → <strong>Añadir a inicio</strong></span>
+  <button class="close-x" onclick="this.parentElement.style.display='none'">✕</button>
+</div>
+
+<div class="fb-banner warn" id="fb-status">
+  <span class="fb-dot fb-dot-warn" id="fb-dot"></span>
+  <span id="fb-status-text">Conectando...</span>
+</div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div><div class="logo">TOPMOBILITY</div><div class="logo-sub" id="logo-sub-text">Servicio premium · Madrid</div></div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('es')">🇪🇸</button>
+      <button class="lang-btn" onclick="setLang('en')">🇬🇧</button>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-user">
+  <div id="subscriber-selector" class="card" style="margin-bottom:12px">
+    <div style="font-size:14px;font-weight:500;margin-bottom:12px" id="lbl-how">¿Cómo deseas solicitar el servicio?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button onclick="setUserType('normal')" id="btn-type-normal"
+        style="padding:14px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:14px;cursor:pointer;transition:all 0.15s">
+        👤 <span id="lbl-client">Cliente</span>
+      </button>
+      <button onclick="setUserType('abonado')" id="btn-type-abonado"
+        style="padding:14px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:14px;cursor:pointer;transition:all 0.15s">
+        ⭐ <span id="lbl-subscriber">Abonado</span>
+      </button>
+    </div>
+    <div id="abonado-login" style="display:none;margin-top:12px">
+      <div class="field-label" id="lbl-sub-code">Código de abonado</div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <input type="text" id="u-abonado-code" placeholder="Ej. AB001" style="flex:1;text-transform:uppercase"/>
+        <button class="btn-sm btn-sm-dark" onclick="verifyAbonado()" id="btn-verify">Verificar</button>
+      </div>
+      <div class="alert alert-error" id="abonado-err" style="display:none">Código no encontrado.</div>
+    </div>
+  </div>
+
+  <div id="request-form" style="display:none">
+    <div class="section-label" id="lbl-new-request">Nueva solicitud</div>
+    <div class="card">
+      <div class="field"><div class="field-label" id="lbl-name">Nombre del pasajero</div><input type="text" id="u-name" placeholder="Ej. Carlos Martínez"/></div>
+      <div class="field"><div class="field-label" id="lbl-phone">Teléfono de contacto</div><input type="tel" id="u-phone" placeholder="+34 600 000 000"/></div>
+      <div class="field"><div class="field-label" id="lbl-pickup">Dirección de recogida</div><input type="text" id="u-pickup" placeholder="Ej. Calle Serrano 41, Madrid"/></div>
+      <div class="field"><div class="field-label" id="lbl-dest">Destino</div><input type="text" id="u-dest" placeholder="Ej. Aeropuerto Barajas T4"/></div>
+      <div class="field"><div class="field-label" id="lbl-vehicle">Tipo de vehículo</div>
+        <select id="u-type">
+          <option id="v1">Berlina premium (4 plazas)</option>
+          <option id="v2">SUV ejecutivo (5 plazas)</option>
+          <option id="v3">Minivan VIP (7 plazas)</option>
+        </select>
+      </div>
+      <div class="field"><div class="field-label" id="lbl-time">Fecha y hora</div><input type="datetime-local" id="u-time"/></div>
+      <div class="field"><div class="field-label"><span id="lbl-flight">Número de vuelo</span> <span style="color:var(--muted);font-weight:400" id="lbl-optional">(opcional)</span></div><input type="text" id="u-flight" placeholder="Ej. IB3456" style="text-transform:uppercase"/></div>
+      <div class="field"><div class="field-label"><span id="lbl-train">Número de tren</span> <span style="color:var(--muted);font-weight:400">(opcional)</span></div><input type="text" id="u-train" placeholder="Ej. AVE 02345" style="text-transform:uppercase"/></div>
+      <div class="field"><div class="field-label" id="lbl-notes">Notas adicionales</div><textarea id="u-notes" placeholder="Equipaje, necesidades especiales..."></textarea></div>
+      <input type="hidden" id="u-abonado"/>
+      <button class="btn btn-dark" onclick="submitRequest()" id="btn-request">Solicitar vehículo</button>
+      <div class="alert alert-success" id="success-msg">Solicitud enviada. El administrador le asignará un vehículo en breve.</div>
+      <div class="alert alert-error" id="error-msg">Error al enviar. Comprueba tu conexión.</div>
+    </div>
+  </div>
+</div>
+
+<a href="admin.html" class="admin-link">Acceso <span>administradores y conductores →</span></a>
+
+<div class="bottom-safe"></div>
+
+<script>
+const PROJECT_ID = "topmobility";
+const API_KEY    = "AIzaSyBV5HzqGiYoekZqmT23iwE6zyomBX4CcZ4";
+const BASE       = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+
+function toFS(obj) {
+  const fields = {};
+  for (const [k,v] of Object.entries(obj)) {
+    if (v === null || v === undefined) fields[k] = {nullValue: null};
+    else if (typeof v === 'boolean')   fields[k] = {booleanValue: v};
+    else if (typeof v === 'number')    fields[k] = {doubleValue: v};
+    else                               fields[k] = {stringValue: String(v)};
+  }
+  return {fields};
+}
+
+function fromFS(doc) {
+  const docId = doc.name.split('/').pop();
+  const out = {id: docId};
+  for (const [k,v] of Object.entries(doc.fields||{})) {
+    if (k === 'id') continue;
+    if (v.stringValue  !== undefined) out[k] = v.stringValue;
+    else if (v.booleanValue !== undefined) out[k] = v.booleanValue;
+    else if (v.integerValue !== undefined) out[k] = Number(v.integerValue);
+    else if (v.doubleValue  !== undefined) out[k] = Number(v.doubleValue);
+    else out[k] = null;
+  }
+  return out;
+}
+
+async function fsGet(col) {
+  const r = await fetch(`${BASE}/${col}?key=${API_KEY}`);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || r.status);
+  return (d.documents||[]).map(fromFS);
+}
+
+async function fsAdd(col, data) {
+  const r = await fetch(`${BASE}/${col}?key=${API_KEY}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(toFS(data))
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || r.status);
+  return fromFS(d);
+}
+
+let abonadosData = [];
+
+function init() {
+  const banner = document.getElementById('fb-status');
+  const txt    = document.getElementById('fb-status-text');
+  const dot    = document.getElementById('fb-dot');
+  fetch(`https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/requests?pageSize=1&key=${API_KEY}`)
+    .then(r => r.text().then(body => {
+      if (r.ok) {
+        banner.className = 'fb-banner ok'; dot.className = 'fb-dot fb-dot-ok';
+        txt.textContent = '✓ Base de datos conectada';
+        setTimeout(() => banner.style.display='none', 3000);
+      } else {
+        banner.className = 'fb-banner err'; dot.className = 'fb-dot fb-dot-err';
+        txt.textContent = '⚠ Error ' + r.status;
+      }
+    }))
+    .catch(e => { banner.className='fb-banner err'; dot.className='fb-dot fb-dot-err'; txt.textContent='⚠ Sin conexión'; });
+  fsGet('abonados').then(a => { abonadosData = a; }).catch(() => {});
+}
+init();
+
+// SPLASH
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    const s = document.getElementById('splash');
+    if (s) { s.classList.add('hide'); setTimeout(() => s.style.display='none', 700); }
+  }, 2200);
+});
+
+// LANGUAGE
+let currentLang = 'es';
+const T = {
+  es: {
+    how:'¿Cómo deseas solicitar el servicio?', client:'Cliente', subscriber:'Abonado',
+    subCode:'Código de abonado', verify:'Verificar', subErr:'Código no encontrado.',
+    newReq:'Nueva solicitud', name:'Nombre del pasajero', phone:'Teléfono de contacto',
+    pickup:'Dirección de recogida', dest:'Destino', vehicle:'Tipo de vehículo',
+    time:'Fecha y hora', flight:'Número de vuelo', optional:'(opcional)',
+    train:'Número de tren', notes:'Notas adicionales',
+    reqBtn:'Solicitar vehículo', namePh:'Ej. Carlos Martínez',
+    pickupPh:'Ej. Calle Serrano 41, Madrid', destPh:'Ej. Aeropuerto Barajas T4',
+    notesPh:'Equipaje, necesidades especiales...',
+    v1:'Berlina premium (4 plazas)', v2:'SUV ejecutivo (5 plazas)', v3:'Minivan VIP (7 plazas)',
+    successMsg:'Solicitud enviada. El administrador le asignará un vehículo en breve.',
+    errorMsg:'Error al enviar. Comprueba tu conexión.',
+    adminLink:'administradores y conductores'
+  },
+  en: {
+    how:'How would you like to request the service?', client:'Client', subscriber:'Subscriber',
+    subCode:'Subscriber code', verify:'Verify', subErr:'Code not found.',
+    newReq:'New request', name:'Passenger name', phone:'Contact phone',
+    pickup:'Pickup address', dest:'Destination', vehicle:'Vehicle type',
+    time:'Date and time', flight:'Flight number', optional:'(optional)',
+    train:'Train number', notes:'Additional notes',
+    reqBtn:'Request vehicle', namePh:'E.g. Carlos Martínez',
+    pickupPh:'E.g. Calle Serrano 41, Madrid', destPh:'E.g. Barajas Airport T4',
+    notesPh:'Luggage, special needs...',
+    v1:'Premium sedan (4 seats)', v2:'Executive SUV (5 seats)', v3:'VIP minivan (7 seats)',
+    successMsg:'Request sent. The administrator will assign a vehicle shortly.',
+    errorMsg:'Error sending. Please check your connection.',
+    adminLink:'administrators and drivers'
+  }
+};
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.lang-btn[onclick="setLang('${lang}')"]`).classList.add('active');
+  const t = T[lang];
+  document.documentElement.lang = lang;
+  setText('lbl-how', t.how);
+  setText('lbl-client', t.client);
+  setText('lbl-subscriber', t.subscriber);
+  setText('lbl-sub-code', t.subCode);
+  setText('btn-verify', t.verify);
+  setText('abonado-err', t.subErr);
+  setText('lbl-new-request', t.newReq);
+  setText('lbl-name', t.name);
+  setText('lbl-phone', t.phone);
+  setText('lbl-pickup', t.pickup);
+  setText('lbl-dest', t.dest);
+  setText('lbl-vehicle', t.vehicle);
+  setText('lbl-time', t.time);
+  setText('lbl-flight', t.flight);
+  setText('lbl-optional', t.optional);
+  setText('lbl-train', t.train);
+  setText('lbl-notes', t.notes);
+  setText('btn-request', t.reqBtn);
+  setText('success-msg', t.successMsg);
+  setText('error-msg', t.errorMsg);
+  setPh('u-name', t.namePh);
+  setPh('u-pickup', t.pickupPh);
+  setPh('u-dest', t.destPh);
+  setPh('u-notes', t.notesPh);
+  const sel = document.getElementById('u-type');
+  if (sel) { sel.options[0].text=t.v1; sel.options[1].text=t.v2; sel.options[2].text=t.v3; }
+  const al = document.querySelector('.admin-link span');
+  if (al) al.textContent = t.adminLink + ' →';
+}
+function setText(id, txt) { const el=document.getElementById(id); if(el) el.textContent=txt; }
+function setPh(id, ph)    { const el=document.getElementById(id); if(el) el.placeholder=ph; }
+
+// USER TYPE
+function setUserType(type) {
+  const selector = document.getElementById('subscriber-selector');
+  const form     = document.getElementById('request-form');
+  const aboLogin = document.getElementById('abonado-login');
+  const btnNorm  = document.getElementById('btn-type-normal');
+  const btnAbon  = document.getElementById('btn-type-abonado');
+  const aboField = document.getElementById('u-abonado');
+  if (!type) {
+    if (selector) selector.style.display='block';
+    if (form) form.style.display='none';
+    if (aboLogin) aboLogin.style.display='none';
+    if (aboField) aboField.value='';
+    [btnNorm,btnAbon].forEach(b => { if(b){b.style.background='';b.style.color='';} });
+    return;
+  }
+  if (type === 'normal') {
+    if (aboField) aboField.value='';
+    if (aboLogin) aboLogin.style.display='none';
+    if (form) form.style.display='block';
+    if (btnNorm){btnNorm.style.background='var(--dark)';btnNorm.style.color='#fff';}
+    if (btnAbon){btnAbon.style.background='';btnAbon.style.color='';}
+  } else {
+    if (aboLogin) aboLogin.style.display='block';
+    if (form) form.style.display='none';
+    if (btnAbon){btnAbon.style.background='var(--dark)';btnAbon.style.color='#fff';}
+    if (btnNorm){btnNorm.style.background='';btnNorm.style.color='';}
+  }
+}
+
+async function verifyAbonado() {
+  const code  = document.getElementById('u-abonado-code').value.trim().toUpperCase();
+  const errEl = document.getElementById('abonado-err');
+  if (!code) return;
+  errEl.style.display='none';
+  const all   = abonadosData.length ? abonadosData : await fsGet('abonados');
+  const found = all.find(a => (a.code||'').toUpperCase() === code);
+  if (!found) { errEl.style.display='block'; return; }
+  document.getElementById('u-abonado').value = found.code;
+  document.getElementById('u-name').value    = found.name  || '';
+  document.getElementById('u-phone').value   = found.phone || '';
+  document.getElementById('request-form').style.display = 'block';
+}
+
+async function submitRequest() {
+  const name    = document.getElementById('u-name').value.trim();
+  const phone   = document.getElementById('u-phone').value.trim();
+  const pickup  = document.getElementById('u-pickup').value.trim();
+  const dest    = document.getElementById('u-dest').value.trim();
+  const type    = document.getElementById('u-type').value;
+  const time    = document.getElementById('u-time').value;
+  const notes   = document.getElementById('u-notes').value.trim();
+  const flight  = document.getElementById('u-flight').value.trim().toUpperCase();
+  const train   = document.getElementById('u-train').value.trim().toUpperCase();
+  const abonado = document.getElementById('u-abonado').value.trim().toUpperCase();
+  const t       = T[currentLang];
+  if (!name||!pickup||!dest) { alert(currentLang==='es'?'Por favor rellena nombre, recogida y destino.':'Please fill in name, pickup and destination.'); return; }
+  const timeLabel = time ? new Date(time).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : (currentLang==='es'?'Sin especificar':'Not specified');
+  const ok  = document.getElementById('success-msg');
+  const err = document.getElementById('error-msg');
+  try {
+    await fsAdd('requests',{name,phone,pickup,dest,type,time:timeLabel,notes,flight,train,abonado,status:'pending',driver:'',plate:'',notified:false});
+    ok.classList.add('show'); err.classList.remove('show');
+    notifyAdmin(name, pickup, dest);
+    setTimeout(()=>ok.classList.remove('show'),5000);
+    ['u-name','u-phone','u-pickup','u-dest','u-notes','u-flight','u-train'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('u-abonado').value='';
+    setUserType(null);
+    document.getElementById('u-time').value='';
+  } catch(e) {
+    err.classList.add('show'); ok.classList.remove('show');
+    console.error(e);
+  }
+}
+
+const NTFY_TOPIC = 'topmobility-admin-mgn150';
+async function notifyAdmin(name, pickup, dest) {
+  try {
+    await fetch('https://ntfy.sh/' + NTFY_TOPIC, {
+      method:'POST',
+      headers:{'Title':'Nueva solicitud Topmobility','Priority':'urgent','Tags':'taxi','Content-Type':'text/plain; charset=utf-8'},
+      body: name + ' · ' + pickup + ' → ' + dest
+    });
+  } catch(e){}
+}
+
+// TRACKING (client opens from WhatsApp link)
+let trackingPollTimer = null;
+
+async function openTracking(requestId, driverLabel) {
+  const panel   = document.getElementById('tracking-panel');
+  const nameEl  = document.getElementById('tracking-driver-name');
+  if (nameEl) nameEl.textContent = driverLabel ? driverLabel.split(' — ')[0] : 'Tu conductor';
+  if (panel) panel.classList.add('open');
+  await updateTrackingMap(driverLabel);
+  if (trackingPollTimer) clearInterval(trackingPollTimer);
+  trackingPollTimer = setInterval(() => updateTrackingMap(driverLabel), 8000);
+}
+
+function closeTracking() {
+  const panel = document.getElementById('tracking-panel');
+  if (panel) panel.classList.remove('open');
+  if (trackingPollTimer) { clearInterval(trackingPollTimer); trackingPollTimer = null; }
+}
+
+async function updateTrackingMap(driverLabel) {
+  try {
+    const all    = await fsGet('drivers');
+    const driver = all.find(d => driverLabel && driverLabel.includes(d.name));
+    const statusEl  = document.getElementById('tracking-status-text');
+    const coordEl   = document.getElementById('tracking-coords');
+    const mapText   = document.getElementById('tracking-map-text');
+    const gmapsLink = document.getElementById('tracking-gmaps-link');
+    const mapDiv    = document.getElementById('tracking-map');
+    if (driver && driver.sharing && driver.lat && driver.lat !== 0) {
+      const lat = driver.lat, lng = driver.lng;
+      if (coordEl) coordEl.textContent = lat.toFixed(5) + ', ' + lng.toFixed(5);
+      if (statusEl) statusEl.textContent = 'Actualizado · ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      const gmapsUrl = 'https://www.google.com/maps?q=' + lat + ',' + lng + '&z=16';
+      if (gmapsLink) gmapsLink.href = gmapsUrl;
+      if (mapDiv) mapDiv.innerHTML = '<iframe src="https://maps.google.com/maps?q=' + lat + ',' + lng + '&z=16&output=embed"></iframe>';
+    } else {
+      if (statusEl) statusEl.textContent = 'El conductor aún no ha activado la ubicación';
+    }
+  } catch(e) { console.error('tracking error:', e); }
+}
+
+// AUTO-OPEN TRACKING FROM URL PARAM ?track=ID
+(async function() {
+  const params    = new URLSearchParams(window.location.search);
+  const trackId   = params.get('track');
+  if (!trackId) return;
+  await new Promise(r => setTimeout(r, 2500));
+  try {
+    const allReqs = await fsGet('requests');
+    const req     = allReqs.find(r => r.id === trackId);
+    if (req && req.driver) openTracking(trackId, req.driver);
+    else openTracking(trackId, '');
+  } catch(e) { openTracking(trackId, ''); }
+})();
+
+// PWA
+if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone)
+  document.getElementById('install-banner').style.display='flex';
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  const b = document.getElementById('install-banner');
+  b.innerHTML = `<span>Instala la app Topmobility</span><button onclick="installPWA()">Instalar</button><button class="close-x" onclick="this.parentElement.style.display='none'">✕</button>`;
+  b.style.display = 'flex';
+});
+function installPWA() {
+  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt=null; document.getElementById('install-banner').style.display='none'; }); }
+}
+</script>
+</body>
+</html>
