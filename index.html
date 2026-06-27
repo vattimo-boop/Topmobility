@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Topmobility"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="logo-tm.png"/>
+  <title>Topmobility</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
+    :root{--bg:#f7f6f3;--surface:#fff;--surface2:#f0efe9;--dark:#1a1a2e;--dark2:#2a2a4e;--text:#1c1c1c;--muted:#888780;--border:rgba(0,0,0,0.09);--border2:rgba(0,0,0,0.15);--green:#3B6D11;--green-bg:#EAF3DE;--green-text:#27500A;--amber-bg:#FAEEDA;--amber-text:#854F0B;--blue-bg:#E6F1FB;--blue-text:#185FA5;--red-bg:#FCEBEB;--red-text:#A32D2D;--radius:12px;--radius-sm:8px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    #splash{position:fixed;inset:0;background:#000;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.7s ease}
+    #splash.hide{opacity:0;pointer-events:none}
+    #splash img{width:200px;max-width:65vw;animation:splashIn 0.9s ease forwards}
+    @keyframes splashIn{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}
+    #splash-sub{color:rgba(255,255,255,0.3);font-size:11px;letter-spacing:3px;margin-top:18px;text-transform:uppercase}
+    #tracking-panel{position:fixed;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column}
+    #tracking-panel.open{display:flex}
+    .tracking-header{background:var(--dark);padding:env(safe-area-inset-top,16px) 16px 16px;display:flex;align-items:center;gap:12px}
+    .tracking-back{background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 8px}
+    .tracking-title{color:#fff;font-size:15px;font-weight:500;flex:1}
+    #tracking-map{flex:1;background:#1a1a2e;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:300px}
+    #tracking-map iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
+    .tracking-info{background:var(--surface);padding:16px;border-top:0.5px solid var(--border)}
+    .tracking-driver-name{font-size:15px;font-weight:500;margin-bottom:4px}
+    .tracking-status{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+    .tracking-dot{width:8px;height:8px;border-radius:50%;background:#639922;flex-shrink:0;animation:tpulse 1.5s infinite}
+    @keyframes tpulse{0%,100%{opacity:1}50%{opacity:0.35}}
+    .map-placeholder{text-align:center;color:rgba(255,255,255,0.5);font-size:14px;padding:20px}
+    .coord-display{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,0.5);margin-top:8px}
+    .topbar{background:var(--dark);padding:env(safe-area-inset-top,0) 0 0;position:sticky;top:0;z-index:100}
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 20px}
+    .logo{font-size:16px;font-weight:500;color:#fff;letter-spacing:1px}
+    .logo-sub{font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px}
+    .lang-toggle{display:flex;background:rgba(255,255,255,0.1);border-radius:20px;padding:2px;gap:2px}
+    .lang-btn{padding:5px 10px;border-radius:18px;border:none;font-size:16px;cursor:pointer;background:transparent;opacity:0.5;transition:all 0.15s}
+    .lang-btn.active{background:rgba(255,255,255,0.2);opacity:1}
+    .fb-banner{font-size:12px;padding:8px 16px;display:flex;align-items:center;gap:8px}
+    .fb-banner.ok{background:var(--green-bg);color:var(--green-text)}
+    .fb-banner.warn{background:var(--amber-bg);color:var(--amber-text)}
+    .fb-banner.err{background:var(--red-bg);color:var(--red-text)}
+    .fb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+    .fb-dot-ok{background:#639922}.fb-dot-warn{background:#EF9F27}.fb-dot-err{background:#c0392b}
+    .view{padding:20px 16px 100px}
+    .section-label{font-size:11px;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:20px 0 10px}
+    .section-label:first-child{margin-top:0}
+    .card{background:var(--surface);border-radius:var(--radius);border:0.5px solid var(--border);padding:16px;margin-bottom:10px}
+    .field{margin-bottom:14px}
+    .field-label{font-size:12px;color:var(--muted);margin-bottom:5px}
+    input[type=text],input[type=tel],input[type=datetime-local],select,textarea{width:100%;padding:12px 14px;font-size:15px;font-family:var(--font);border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);color:var(--text);appearance:none;-webkit-appearance:none;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--dark);box-shadow:0 0 0 3px rgba(26,26,46,0.08)}
+    textarea{resize:none;height:80px;line-height:1.5}
+    select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+    .btn{width:100%;padding:14px;font-size:15px;font-family:var(--font);font-weight:500;border:none;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.12s}
+    .btn:active{transform:scale(0.98)}.btn-dark{background:var(--dark);color:#fff}
+    .btn-sm{padding:8px 14px;font-size:13px;font-family:var(--font);font-weight:500;border:none;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;transition:all 0.12s}
+    .btn-sm-dark{background:var(--dark);color:#fff}
+    .alert{border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;margin-top:12px;display:none}
+    .alert.show{display:block}
+    .alert-success{background:var(--green-bg);color:var(--green-text)}
+    .alert-error{background:var(--red-bg);color:var(--red-text)}
+    .bottom-safe{height:env(safe-area-inset-bottom,0)}
+    .install-banner{background:var(--dark2);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+    .install-banner button{background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-family:var(--font);cursor:pointer}
+    .close-x{background:transparent!important;color:rgba(255,255,255,0.5)!important;font-size:18px!important;padding:0 4px!important}
+    .ac-wrap{position:relative}
+    .ac-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius-sm);z-index:200;max-height:200px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.12);margin-top:2px}
+    .ac-item{padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:0.5px solid var(--border);line-height:1.4}
+    .ac-item:last-child{border-bottom:none}
+    .ac-item:active{background:var(--surface2)}
+    .ac-item-main{color:var(--text);font-weight:500}
+    .ac-item-sub{color:var(--muted);font-size:11px;margin-top:2px}
+    .stat-card{background:var(--surface);border-radius:var(--radius-sm);border:0.5px solid var(--border);padding:14px}
+    .stat-num{font-size:28px;font-weight:300;color:var(--text);line-height:1}
+    .stat-label{font-size:12px;color:var(--muted);margin-top:4px}
+    .loading{text-align:center;padding:30px 0;color:var(--muted);font-size:13px}
+    .empty{text-align:center;padding:40px 0;color:var(--muted);font-size:14px}
+  </style>
+</head>
+<body>
+
+<div id="splash">
+  <img src="logo-tm.png" onerror="this.style.display='none'" alt="TM"/>
+  <div id="splash-sub">Topmobility</div>
+</div>
+
+<div id="tracking-panel">
+  <div class="tracking-header">
+    <button class="tracking-back" onclick="closeTracking()">&#8592;</button>
+    <div class="tracking-title">Su conductor est&#225; en camino</div>
+  </div>
+  <div id="tracking-map">
+    <div class="map-placeholder">
+      <div style="font-size:48px;margin-bottom:12px">&#128205;</div>
+      <div id="tracking-map-text">Esperando ubicaci&#243;n del conductor...</div>
+      <div class="coord-display" id="tracking-coords"></div>
+      <div style="margin-top:20px">
+        <a id="tracking-gmaps-link" href="#" target="_blank" style="display:inline-block;padding:10px 20px;background:#4285F4;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500">Ver en Google Maps</a>
+      </div>
+    </div>
+  </div>
+  <div class="tracking-info">
+    <div class="tracking-driver-name" id="tracking-driver-name"></div>
+    <div class="tracking-status"><span class="tracking-dot"></span><span id="tracking-status-text">Actualizando...</span></div>
+    <div id="eta-box" style="display:none;margin-top:12px;background:var(--dark);border-radius:var(--radius-sm);padding:14px;text-align:center">
+      <div style="color:rgba(255,255,255,0.5);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Tiempo estimado de llegada</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:20px">
+        <div><div id="eta-time" style="font-size:34px;font-weight:300;color:#fff;line-height:1">&#8212;</div><div style="color:rgba(255,255,255,0.4);font-size:11px;margin-top:3px">minutos</div></div>
+        <div style="width:0.5px;height:40px;background:rgba(255,255,255,0.15)"></div>
+        <div><div id="eta-dist" style="font-size:34px;font-weight:300;color:#fff;line-height:1">&#8212;</div><div style="color:rgba(255,255,255,0.4);font-size:11px;margin-top:3px">km</div></div>
+      </div>
+      <div id="eta-updated" style="color:rgba(255,255,255,0.3);font-size:10px;margin-top:8px"></div>
+    </div>
+    <div style="margin-top:12px">
+      <button onclick="closeTracking()" style="width:100%;padding:10px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:8px;font-size:13px;font-family:var(--font);cursor:pointer">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="install-banner" id="install-banner" style="display:none">
+  <span>Instala Topmobility: pulsa <strong>Compartir</strong> &#8594; <strong>A&#241;adir a inicio</strong></span>
+  <button class="close-x" onclick="this.parentElement.style.display='none'">&#10005;</button>
+</div>
+
+<div class="fb-banner warn" id="fb-status">
+  <span class="fb-dot fb-dot-warn" id="fb-dot"></span>
+  <span id="fb-status-text">Conectando...</span>
+</div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <div class="logo" id="logo-tap" ondblclick="window.location.href='admin.html'" style="cursor:default;user-select:none">TOPMOBILITY</div>
+      <div class="logo-sub">Servicio premium &middot; Madrid</div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('es')">&#127466;&#127480;</button>
+      <button class="lang-btn" onclick="setLang('en')">&#127468;&#127463;</button>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-user">
+  <div style="padding:20px 4px 16px;text-align:center">
+    <div style="font-size:22px;font-weight:300;color:var(--dark);letter-spacing:-0.5px;margin-bottom:6px">Viaje con distinci&#243;n</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.8">Discreci&#243;n &middot; Puntualidad &middot; Confort<br>Conductores profesionales &middot; Madrid 24h</div>
+    <div style="display:flex;justify-content:center;gap:20px;margin-top:16px">
+      <div style="text-align:center"><div style="font-size:22px;font-weight:300;color:var(--dark)">24h</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Disponible</div></div>
+      <div style="width:0.5px;background:var(--border);height:40px;align-self:center"></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:300;color:var(--dark)">VIP</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Flota premium</div></div>
+      <div style="width:0.5px;background:var(--border);height:40px;align-self:center"></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:300;color:var(--dark)">&#10003;</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Privacidad</div></div>
+    </div>
+  </div>
+
+  <div id="subscriber-selector" class="card" style="margin-bottom:12px">
+    <div style="font-size:14px;font-weight:500;margin-bottom:12px" id="lbl-how">&#191;C&#243;mo deseas solicitar el servicio?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button onclick="setUserType('normal')" id="btn-type-normal" style="padding:14px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:14px;cursor:pointer">
+        &#128100; <span id="lbl-client">Cliente</span>
+      </button>
+      <button onclick="setUserType('abonado')" id="btn-type-abonado" style="padding:14px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:14px;cursor:pointer">
+        &#11088; <span id="lbl-subscriber">Abonado</span>
+      </button>
+    </div>
+    <div id="abonado-login" style="display:none;margin-top:12px">
+      <div class="field-label" id="lbl-sub-code">C&#243;digo de abonado</div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <input type="text" id="u-abonado-code" placeholder="Ej. AB001" style="flex:1;text-transform:uppercase"/>
+        <button class="btn-sm btn-sm-dark" onclick="verifyAbonado()" id="btn-verify">Verificar</button>
+      </div>
+      <div class="alert alert-error" id="abonado-err" style="display:none">C&#243;digo no encontrado.</div>
+      <div id="abonado-action" style="display:none;margin-top:12px">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Bienvenido/a, <strong id="abonado-welcome-name"></strong></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button onclick="abonadoGoRequest()" style="padding:14px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:13px;cursor:pointer;text-align:center">
+            &#128663;<br><span style="font-weight:500">Solicitar<br>servicio</span>
+          </button>
+          <button onclick="abonadoGoHistory()" style="padding:14px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:13px;cursor:pointer;text-align:center">
+            &#128203;<br><span style="font-weight:500">Ver mi<br>historial</span>
+          </button>
+        </div>
+        <button onclick="showPasteTemplate()" style="width:100%;margin-top:10px;padding:12px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface);font-family:var(--font);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          &#128203; <span style="font-weight:500">Pegar plantilla de WhatsApp</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="request-form" style="display:none">
+    <div class="section-label" id="lbl-new-request">Nueva solicitud</div>
+    <div class="card">
+      <div class="field"><div class="field-label" id="lbl-name">Nombre del pasajero</div><input type="text" id="u-name" placeholder="Ej. Carlos Mart&#237;nez"/></div>
+      <div class="field"><div class="field-label" id="lbl-phone">Tel&#233;fono de contacto</div><input type="tel" id="u-phone" placeholder="+34 600 000 000"/></div>
+      <div class="field">
+        <div class="field-label" id="lbl-pickup">Direcci&#243;n de recogida</div>
+        <div class="ac-wrap">
+          <input type="text" id="u-pickup" placeholder="Ej. Calle Serrano 41, Madrid" autocomplete="off" oninput="acSearch(this.value,'ac-list-pickup','pickup')" onfocus="acSearch(this.value,'ac-list-pickup','pickup')"/>
+          <div id="ac-list-pickup" class="ac-list" style="display:none"></div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-label" id="lbl-dest">Destino</div>
+        <div class="ac-wrap">
+          <input type="text" id="u-dest" placeholder="Ej. Aeropuerto Barajas T4" autocomplete="off" oninput="acSearch(this.value,'ac-list-dest','dest')" onfocus="acSearch(this.value,'ac-list-dest','dest')"/>
+          <div id="ac-list-dest" class="ac-list" style="display:none"></div>
+        </div>
+      </div>
+      <div class="field"><div class="field-label" id="lbl-vehicle">Tipo de veh&#237;culo</div>
+        <select id="u-type">
+          <option>Berlina premium (4 plazas)</option>
+          <option>SUV ejecutivo (5 plazas)</option>
+          <option>Minivan VIP (7 plazas)</option>
+        </select>
+      </div>
+      <div class="field"><div class="field-label" id="lbl-time">Fecha y hora</div><input type="datetime-local" id="u-time"/></div>
+      <div class="field"><div class="field-label"><span id="lbl-flight">N&#250;mero de vuelo</span> <span style="color:var(--muted)" id="lbl-optional">(opcional)</span></div><input type="text" id="u-flight" placeholder="Ej. IB3456" style="text-transform:uppercase"/></div>
+      <div class="field"><div class="field-label"><span id="lbl-train">N&#250;mero de tren</span> <span style="color:var(--muted)">(opcional)</span></div><input type="text" id="u-train" placeholder="Ej. AVE 02345" style="text-transform:uppercase"/></div>
+      <div class="field" id="proyecto-field" style="display:none">
+        <div class="field-label">Proyecto <span style="color:var(--muted)">(opcional)</span></div>
+        <input type="text" id="u-proyecto" placeholder="Ej. Proyecto Norte"/>
+      </div>
+      <div class="field"><div class="field-label" id="lbl-notes">Notas adicionales</div><textarea id="u-notes" placeholder="Equipaje, necesidades especiales..."></textarea></div>
+      <input type="hidden" id="u-abonado"/>
+      <button class="btn btn-dark" onclick="submitRequest()" id="btn-request">Solicitar veh&#237;culo</button>
+      <div class="alert alert-success" id="success-msg">Solicitud enviada. El administrador le asignar&#225; un veh&#237;culo en breve.</div>
+      <div class="alert alert-error" id="error-msg">Error al enviar. Comprueba tu conexi&#243;n.</div>
+    </div>
+  </div>
+</div>
+
+<div id="abonado-history-panel" style="display:none;padding:20px 16px 100px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button onclick="closeAbonadoHistory()" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:var(--muted);padding:0">&#8592;</button>
+    <div>
+      <div style="font-size:15px;font-weight:500" id="ah-welcome"></div>
+      <div style="font-size:12px;color:var(--muted)" id="ah-code"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="section-label" style="margin-top:0">Filtrar por fecha</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="field"><div class="field-label">Desde</div><input type="date" id="ah-date-from"/></div>
+      <div class="field"><div class="field-label">Hasta</div><input type="date" id="ah-date-to"/></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="loadAbonadoHistory()" class="btn btn-dark" style="flex:1">Filtrar</button>
+      <button onclick="downloadAbonadoPDF()" class="btn-sm btn-sm-dark" style="padding:14px">&#8595; PDF</button>
+    </div>
+  </div>
+  <div id="ah-list"><div class="loading">Cargando historial...</div></div>
+</div>
+
+<div id="paste-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:600;display:none;align-items:flex-end">
+  <div style="background:var(--surface);border-radius:var(--radius) var(--radius) 0 0;width:100%;padding:20px 16px 40px;max-height:85vh;overflow-y:auto">
+    <div style="width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+    <div style="font-size:16px;font-weight:500;margin-bottom:6px">Pegar plantilla</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px">Pega el mensaje de WhatsApp y se rellenar&#225; el formulario autom&#225;ticamente</div>
+    <textarea id="paste-input" placeholder="Pega aqu&#237; el mensaje de WhatsApp..." style="width:100%;height:160px;padding:12px;font-size:14px;font-family:var(--font);border-radius:var(--radius-sm);border:0.5px solid var(--border2);resize:none;line-height:1.6"></textarea>
+    <div id="paste-loading" style="display:none;text-align:center;padding:12px;color:var(--muted);font-size:13px">&#9203; Procesando...</div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button onclick="processTemplate()" class="btn btn-dark" style="flex:1">Rellenar formulario</button>
+      <button onclick="closePasteModal()" style="padding:14px 20px;background:var(--surface2);border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-family:var(--font);cursor:pointer">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-safe"></div>
+
+<script>
+const PROJECT_ID = "topmobility";
+const API_KEY    = "AIzaSyBV5HzqGiYoekZqmT23iwE6zyomBX4CcZ4";
+const BASE       = "https://firestore.googleapis.com/v1/projects/" + PROJECT_ID + "/databases/(default)/documents";
+
+function toFS(obj) {
+  const fields = {};
+  for (const [k,v] of Object.entries(obj)) {
+    if (v === null || v === undefined) fields[k] = {nullValue: null};
+    else if (typeof v === "boolean")   fields[k] = {booleanValue: v};
+    else if (typeof v === "number")    fields[k] = {doubleValue: v};
+    else                               fields[k] = {stringValue: String(v)};
+  }
+  return {fields};
+}
+
+function fromFS(doc) {
+  const docId = doc.name.split("/").pop();
+  const out = {id: docId};
+  for (const [k,v] of Object.entries(doc.fields||{})) {
+    if (k === "id") continue;
+    if (v.stringValue  !== undefined) out[k] = v.stringValue;
+    else if (v.booleanValue !== undefined) out[k] = v.booleanValue;
+    else if (v.integerValue !== undefined) out[k] = Number(v.integerValue);
+    else if (v.doubleValue  !== undefined) out[k] = Number(v.doubleValue);
+    else out[k] = null;
+  }
+  return out;
+}
+
+async function fsGet(col) {
+  const r = await fetch(BASE + "/" + col + "?key=" + API_KEY);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || r.status);
+  return (d.documents||[]).map(fromFS);
+}
+
+async function fsAdd(col, data) {
+  const r = await fetch(BASE + "/" + col + "?key=" + API_KEY, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(toFS(data))
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error?.message || r.status);
+  return fromFS(d);
+}
+
+let abonadosData = [];
+
+function init() {
+  const banner = document.getElementById("fb-status");
+  const txt    = document.getElementById("fb-status-text");
+  const dot    = document.getElementById("fb-dot");
+  fetch(BASE + "/requests?pageSize=1&key=" + API_KEY)
+    .then(function(r){ return r.text().then(function(body){
+      if (r.ok) {
+        banner.className = "fb-banner ok"; dot.className = "fb-dot fb-dot-ok";
+        txt.textContent = "Base de datos conectada";
+        setTimeout(function(){ banner.style.display="none"; }, 3000);
+      } else {
+        banner.className = "fb-banner err"; dot.className = "fb-dot fb-dot-err";
+        txt.textContent = "Error " + r.status;
+      }
+    });})
+    .catch(function(){ banner.className="fb-banner err"; dot.className="fb-dot fb-dot-err"; txt.textContent="Sin conexion"; });
+  fsGet("abonados").then(function(a){ abonadosData = a; }).catch(function(){});
+}
+init();
+
+window.addEventListener("load", function() {
+  const s = document.getElementById("splash");
+  if (s) { s.style.display="none"; }
+});
+
+let currentLang = "es";
+const T = {
+  es: {
+    how:"Como deseas solicitar el servicio?", client:"Cliente", subscriber:"Abonado",
+    subCode:"Codigo de abonado", verify:"Verificar", subErr:"Codigo no encontrado.",
+    newReq:"Nueva solicitud", name:"Nombre del pasajero", phone:"Telefono de contacto",
+    pickup:"Direccion de recogida", dest:"Destino", vehicle:"Tipo de vehiculo",
+    time:"Fecha y hora", flight:"Numero de vuelo", optional:"(opcional)",
+    train:"Numero de tren", notes:"Notas adicionales",
+    reqBtn:"Solicitar vehiculo",
+    successMsg:"Solicitud enviada. El administrador le asignara un vehiculo en breve.",
+    errorMsg:"Error al enviar. Comprueba tu conexion.",
+    v1:"Berlina premium (4 plazas)", v2:"SUV ejecutivo (5 plazas)", v3:"Minivan VIP (7 plazas)"
+  },
+  en: {
+    how:"How would you like to request the service?", client:"Client", subscriber:"Subscriber",
+    subCode:"Subscriber code", verify:"Verify", subErr:"Code not found.",
+    newReq:"New request", name:"Passenger name", phone:"Contact phone",
+    pickup:"Pickup address", dest:"Destination", vehicle:"Vehicle type",
+    time:"Date and time", flight:"Flight number", optional:"(optional)",
+    train:"Train number", notes:"Additional notes",
+    reqBtn:"Request vehicle",
+    successMsg:"Request sent. The administrator will assign a vehicle shortly.",
+    errorMsg:"Error sending. Please check your connection.",
+    v1:"Premium sedan (4 seats)", v2:"Executive SUV (5 seats)", v3:"VIP minivan (7 seats)"
+  }
+};
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll(".lang-btn").forEach(function(b){ b.classList.remove("active"); });
+  document.querySelectorAll(".lang-btn").forEach(function(b){ var oc=b.getAttribute("onclick"); if(oc && oc.indexOf(lang)>=0) b.classList.add("active"); });
+  const t = T[lang];
+  document.documentElement.lang = lang;
+  const ids = {
+    "lbl-how":t.how,"lbl-client":t.client,"lbl-subscriber":t.subscriber,
+    "lbl-sub-code":t.subCode,"btn-verify":t.verify,"abonado-err":t.subErr,
+    "lbl-new-request":t.newReq,"lbl-name":t.name,"lbl-phone":t.phone,
+    "lbl-pickup":t.pickup,"lbl-dest":t.dest,"lbl-vehicle":t.vehicle,
+    "lbl-time":t.time,"lbl-flight":t.flight,"lbl-optional":t.optional,
+    "lbl-train":t.train,"lbl-notes":t.notes,"btn-request":t.reqBtn,
+    "success-msg":t.successMsg,"error-msg":t.errorMsg
+  };
+  for (const [id,txt] of Object.entries(ids)) { const el=document.getElementById(id); if(el) el.textContent=txt; }
+  const phs = {"u-name":"Ej. Carlos Martinez","u-notes":"Equipaje, necesidades especiales..."};
+  for (const [id,ph] of Object.entries(phs)) { const el=document.getElementById(id); if(el) el.placeholder=ph; }
+  const sel = document.getElementById("u-type");
+  if (sel) { sel.options[0].text=t.v1; sel.options[1].text=t.v2; sel.options[2].text=t.v3; }
+}
+
+function setUserType(type) {
+  const selector = document.getElementById("subscriber-selector");
+  const form     = document.getElementById("request-form");
+  const aboLogin = document.getElementById("abonado-login");
+  const btnNorm  = document.getElementById("btn-type-normal");
+  const btnAbon  = document.getElementById("btn-type-abonado");
+  const aboField = document.getElementById("u-abonado");
+  if (!type) {
+    if (selector) selector.style.display="block";
+    if (form) form.style.display="none";
+    if (aboLogin) aboLogin.style.display="none";
+    if (aboField) aboField.value="";
+    [btnNorm,btnAbon].forEach(function(b){ if(b){b.style.background="";b.style.color="";} });
+    return;
+  }
+  if (type === "normal") {
+    if (aboField) aboField.value="";
+    if (aboLogin) aboLogin.style.display="none";
+    if (form) form.style.display="block";
+    if (btnNorm){btnNorm.style.background="var(--dark)";btnNorm.style.color="#fff";}
+    if (btnAbon){btnAbon.style.background="";btnAbon.style.color="";}
+    const pf = document.getElementById("proyecto-field");
+    if (pf) pf.style.display = "none";
+  } else {
+    if (aboLogin) aboLogin.style.display="block";
+    if (form) form.style.display="none";
+    if (btnAbon){btnAbon.style.background="var(--dark)";btnAbon.style.color="#fff";}
+    if (btnNorm){btnNorm.style.background="";btnNorm.style.color="";}
+  }
+}
+
+let currentAbonado = null;
+
+async function verifyAbonado() {
+  const code  = document.getElementById("u-abonado-code").value.trim().toUpperCase();
+  const errEl = document.getElementById("abonado-err");
+  if (!code) return;
+  errEl.style.display="none";
+  const all   = abonadosData.length ? abonadosData : await fsGet("abonados");
+  const found = all.find(function(a){ return (a.code||"").toUpperCase() === code; });
+  if (!found) { errEl.style.display="block"; return; }
+  currentAbonado = found;
+  document.getElementById("abonado-welcome-name").textContent = found.name;
+  document.getElementById("abonado-action").style.display = "block";
+}
+
+function abonadoGoRequest() {
+  if (!currentAbonado) return;
+  document.getElementById("u-abonado").value = currentAbonado.code;
+  document.getElementById("u-name").value    = "";
+  document.getElementById("u-phone").value   = "";
+  document.getElementById("request-form").style.display = "block";
+  document.getElementById("abonado-action").style.display = "none";
+  const pf = document.getElementById("proyecto-field");
+  if (pf) pf.style.display = "block";
+}
+
+function abonadoGoHistory() {
+  if (!currentAbonado) return;
+  document.getElementById("view-user").style.display = "none";
+  document.getElementById("abonado-history-panel").style.display = "block";
+  document.getElementById("ah-welcome").textContent = "Hola, " + currentAbonado.name;
+  document.getElementById("ah-code").textContent = "Codigo: " + currentAbonado.code;
+  loadAbonadoHistory();
+}
+
+function closeAbonadoHistory() {
+  document.getElementById("abonado-history-panel").style.display = "none";
+  document.getElementById("view-user").style.display = "block";
+}
+
+async function loadAbonadoHistory() {
+  const listEl   = document.getElementById("ah-list");
+  const dateFrom = document.getElementById("ah-date-from").value;
+  const dateTo   = document.getElementById("ah-date-to").value;
+  listEl.innerHTML = "<div class=\"loading\">Cargando...</div>";
+  try {
+    const all = await fsGet("history");
+    let filtered = all.filter(function(h){ return (h.abonado||"").toUpperCase() === currentAbonado.code.toUpperCase(); });
+    if (dateFrom) filtered = filtered.filter(function(h){ return (h.completedAt||"") >= dateFrom; });
+    if (dateTo)   filtered = filtered.filter(function(h){ return (h.completedAt||"") <= dateTo; });
+    filtered.sort(function(a,b){ return b.id > a.id ? 1 : -1; });
+    abonadoHistoryData = filtered;
+    if (!filtered.length) { listEl.innerHTML = "<div class=\"empty\">No hay servicios en este periodo</div>"; return; }
+    listEl.innerHTML = "";
+    const summary = document.createElement("div");
+    summary.className = "card"; summary.style.marginBottom = "12px";
+    summary.innerHTML = "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:10px\">" +
+      "<div class=\"stat-card\"><div class=\"stat-num\">" + filtered.length + "</div><div class=\"stat-label\">Servicios</div></div>" +
+      "<div class=\"stat-card\"><div class=\"stat-num\" style=\"font-size:14px;padding-top:4px\">" + esc(filtered[0].completedAt||"") + "</div><div class=\"stat-label\">Ultimo servicio</div></div>" +
+      "</div>";
+    listEl.appendChild(summary);
+    filtered.forEach(function(h) {
+      const card = document.createElement("div");
+      card.className = "card"; card.style.marginBottom = "10px";
+      card.innerHTML =
+        "<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:10px\">" +
+          "<div><div style=\"font-size:15px;font-weight:500\">" + esc(h.name) + "</div>" +
+          "<div style=\"font-size:12px;color:var(--muted);margin-top:2px\">&#10003; " + esc(h.completedAt||"") + "</div></div>" +
+          "<div style=\"text-align:right\"><div style=\"font-size:13px;color:var(--muted)\">" + esc(h.time||"") + "</div></div>" +
+        "</div>" +
+        "<div style=\"background:var(--surface2);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px\">" +
+          "<div style=\"font-size:12px;color:var(--muted);margin-bottom:4px\">TRAYECTO</div>" +
+          "<div style=\"font-size:13px;font-weight:500\">" + esc(h.pickup) + "</div>" +
+          "<div style=\"font-size:12px;color:var(--muted);margin:3px 0\">&#8595;</div>" +
+          "<div style=\"font-size:13px;font-weight:500\">" + esc(h.dest) + "</div>" +
+        "</div>" +
+        (h.proyecto ? "<div style=\"font-size:12px;color:var(--blue-text);margin-bottom:6px\">&#128193; " + esc(h.proyecto) + "</div>" : "") +
+        (h.notes ? "<div style=\"font-size:12px;color:var(--muted);margin-bottom:6px\">&#128221; " + esc(h.notes) + "</div>" : "") +
+        "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px\">" +
+          "<div style=\"background:var(--surface2);border-radius:var(--radius-sm);padding:8px\">" +
+            "<div style=\"font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px\">Vehiculo</div>" +
+            "<div style=\"font-size:12px\">" + esc(h.type||"") + "</div></div>" +
+          "<div style=\"background:var(--surface2);border-radius:var(--radius-sm);padding:8px\">" +
+            "<div style=\"font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px\">Matricula</div>" +
+            "<div style=\"font-family:var(--mono);font-size:13px;font-weight:500\">" + esc(h.plate||"") + "</div></div>" +
+        "</div>" +
+        "<div style=\"margin-top:8px;background:var(--surface2);border-radius:var(--radius-sm);padding:8px\">" +
+          "<div style=\"font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px\">Conductor</div>" +
+          "<div style=\"font-size:13px\">" + esc(h.driver ? h.driver.split(" — ")[0] : "") + "</div></div>";
+      listEl.appendChild(card);
+    });
+  } catch(e) { listEl.innerHTML = "<div class=\"empty\">Error: " + e.message + "</div>"; }
+}
+
+async function submitRequest() {
+  const name    = document.getElementById("u-name").value.trim();
+  const phone   = document.getElementById("u-phone").value.trim();
+  const pickup  = document.getElementById("u-pickup").value.trim();
+  const dest    = document.getElementById("u-dest").value.trim();
+  const type    = document.getElementById("u-type").value;
+  const time    = document.getElementById("u-time").value;
+  const notes   = document.getElementById("u-notes").value.trim();
+  const flight  = document.getElementById("u-flight").value.trim().toUpperCase();
+  const train   = document.getElementById("u-train").value.trim().toUpperCase();
+  const proyecto = (document.getElementById("u-proyecto")||{value:""}).value.trim();
+  const abonado = document.getElementById("u-abonado").value.trim().toUpperCase();
+  if (!name||!pickup||!dest) { alert("Por favor rellena nombre, recogida y destino."); return; }
+  const timeLabel = time ? new Date(time).toLocaleString("es-ES",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "Sin especificar";
+  const ok  = document.getElementById("success-msg");
+  const err = document.getElementById("error-msg");
+  try {
+    await fsAdd("requests",{name,phone,pickup,dest,type,time:timeLabel,notes,flight,train,abonado,proyecto,status:"pending",driver:"",plate:"",notified:false});
+    ok.classList.add("show"); err.classList.remove("show");
+    notifyAdmin({name,phone,pickup,dest,type,time:timeLabel,flight,train,abonado,notes});
+    ["u-name","u-phone","u-pickup","u-dest","u-notes","u-flight","u-train","u-proyecto"].forEach(function(id){ const el=document.getElementById(id); if(el) el.value=""; });
+    document.getElementById("u-abonado").value="";
+    document.getElementById("u-time").value="";
+    setTimeout(function(){ ok.classList.remove("show"); setUserType(null); }, 5000);
+  } catch(e) { err.classList.add("show"); ok.classList.remove("show"); console.error(e); }
+}
+
+const NTFY_TOPIC = "topmobility-admin-mgn150";
+const EMAILJS_SERVICE  = "service_5v76jhq";
+const EMAILJS_TEMPLATE = "template_10e835q";
+const EMAILJS_KEY      = "Vk_tzCLCcxgMFB7qM";
+emailjs.init(EMAILJS_KEY);
+
+async function notifyAdmin(data) {
+  try {
+    await fetch("https://ntfy.sh/" + NTFY_TOPIC, {
+      method:"POST",
+      headers:{"Title":"Nueva solicitud Topmobility","Priority":"urgent","Tags":"taxi","Content-Type":"text/plain; charset=utf-8"},
+      body: data.name + " - " + data.pickup + " to " + data.dest
+    });
+  } catch(e){}
+  try {
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+      name:data.name||"", phone:data.phone||"", pickup:data.pickup||"", dest:data.dest||"",
+      type:data.type||"", time:data.time||"", flight:data.flight||"", train:data.train||"",
+      abonado:data.abonado||"", notes:data.notes||""
+    });
+  } catch(e){ console.error("EmailJS error:", e); }
+}
+
+let trackingPollTimer = null;
+let currentTrackingDriverId = null;
+let currentTrackingPickup = null;
+
+async function openTracking(requestId, driverLabel, pickupAddress, drvId) {
+  const panel  = document.getElementById("tracking-panel");
+  const nameEl = document.getElementById("tracking-driver-name");
+  if (nameEl) nameEl.textContent = driverLabel ? driverLabel.split(" -- ")[0] : "Tu conductor";
+  if (panel) panel.classList.add("open");
+  currentTrackingPickup   = pickupAddress || null;
+  currentTrackingDriverId = drvId || null;
+  await updateTrackingMap(driverLabel);
+  if (trackingPollTimer) clearInterval(trackingPollTimer);
+  trackingPollTimer = setInterval(function(){ updateTrackingMap(driverLabel); }, 30000);
+}
+
+function closeTracking() {
+  const panel = document.getElementById("tracking-panel");
+  if (panel) panel.classList.remove("open");
+  if (trackingPollTimer) { clearInterval(trackingPollTimer); trackingPollTimer = null; }
+}
+
+async function updateTrackingMap(driverLabel) {
+  try {
+    const all    = await fsGet("drivers");
+    const driver = currentTrackingDriverId
+      ? all.find(function(d){ return d.id === currentTrackingDriverId; })
+      : all.find(function(d){ return driverLabel && driverLabel.includes(d.name); });
+    const statusEl  = document.getElementById("tracking-status-text");
+    const coordEl   = document.getElementById("tracking-coords");
+    const gmapsLink = document.getElementById("tracking-gmaps-link");
+    const mapDiv    = document.getElementById("tracking-map");
+    const etaBox    = document.getElementById("eta-box");
+    if (driver && driver.sharing && driver.lat && driver.lat !== 0) {
+      const lat = driver.lat, lng = driver.lng;
+      if (coordEl) coordEl.textContent = lat.toFixed(5) + ", " + lng.toFixed(5);
+      if (statusEl) statusEl.textContent = "Actualizado - " + new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+      if (gmapsLink) gmapsLink.href = "https://www.google.com/maps?q=" + lat + "," + lng + "&z=16";
+      if (mapDiv) mapDiv.innerHTML = "<iframe src=\"https://maps.google.com/maps?q=" + lat + "," + lng + "&z=16&output=embed\"></iframe>";
+      if (currentTrackingPickup) await calcETA(lat, lng, currentTrackingPickup);
+    } else {
+      if (statusEl) statusEl.textContent = "El conductor aun no ha activado la ubicacion";
+      if (etaBox) etaBox.style.display = "none";
+    }
+  } catch(e) { console.error("tracking error:", e); }
+}
+
+async function geocodeAddress(address) {
+  try {
+    const url = "https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(address + ", Spain") + "&format=json&limit=1";
+    const r = await fetch(url, { headers: { "Accept-Language": "es" } });
+    const d = await r.json();
+    if (d && d.length > 0) return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon) };
+  } catch(e) {}
+  return null;
+}
+
+const acCoords = {};
+
+async function calcETA(driverLat, driverLng, pickupAddress) {
+  try {
+    const dest = acCoords["pickup"] || await geocodeAddress(pickupAddress);
+    if (!dest) return;
+    const url = "https://router.project-osrm.org/route/v1/driving/" + driverLng + "," + driverLat + ";" + dest.lng + "," + dest.lat + "?overview=false";
+    const r = await fetch(url);
+    const d = await r.json();
+    if (d.code === "Ok" && d.routes && d.routes.length > 0) {
+      const minutes = Math.ceil(d.routes[0].duration / 60);
+      const km = (d.routes[0].distance / 1000).toFixed(1);
+      const etaBox = document.getElementById("eta-box"); if (etaBox) etaBox.style.display = "block";
+      const etaTime = document.getElementById("eta-time"); if (etaTime) etaTime.textContent = minutes;
+      const etaDist = document.getElementById("eta-dist"); if (etaDist) etaDist.textContent = km;
+      const etaUpd  = document.getElementById("eta-updated"); if (etaUpd) etaUpd.textContent = "Actualizado: " + new Date().toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
+    }
+  } catch(e) {}
+}
+
+(async function() {
+  const params  = new URLSearchParams(window.location.search);
+  const trackId = params.get("track");
+  const drvId   = params.get("drv");
+  if (!trackId) return;
+  await new Promise(function(r){ setTimeout(r, 2500); });
+  try {
+    const allReqs = await fsGet("requests");
+    const req = allReqs.find(function(r){ return r.id === trackId; });
+    openTracking(trackId, req ? (req.driver||"") : "", req ? (req.pickup||"") : "", drvId);
+  } catch(e) { openTracking(trackId, "", "", drvId); }
+})();
+
+if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone)
+  document.getElementById("install-banner").style.display="flex";
+
+let deferredPrompt;
+window.addEventListener("beforeinstallprompt", function(e){
+  e.preventDefault(); deferredPrompt = e;
+  const b = document.getElementById("install-banner");
+  b.innerHTML = "<span>Instala Topmobility</span><button onclick=\"installPWA()\">Instalar</button><button onclick=\"this.parentElement.style.display=\"none\"">X</button>";
+  b.style.display = "flex";
+});
+function installPWA() {
+  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(function(){ deferredPrompt=null; document.getElementById("install-banner").style.display="none"; }); }
+}
+
+(function(){
+  var taps=0, timer=null;
+  document.getElementById("logo-tap").addEventListener("touchend", function(){
+    taps++;
+    if(taps===1){ timer=setTimeout(function(){ taps=0; }, 400); }
+    else if(taps===2){ clearTimeout(timer); taps=0; window.location.href="admin.html"; }
+  });
+})();
+
+const acTimers = {};
+
+async function acSearch(query, listId, field) {
+  clearTimeout(acTimers[field]);
+  const listEl = document.getElementById(listId);
+  if (!query || query.length < 3) { if (listEl) listEl.style.display = "none"; return; }
+  acTimers[field] = setTimeout(async function() {
+    try {
+      const url = "https://photon.komoot.io/api/?q=" + encodeURIComponent(query) + "&lang=default&limit=6&countrycode=es";
+      const r = await fetch(url);
+      const d = await r.json();
+      if (!d.features || !d.features.length) { listEl.style.display = "none"; return; }
+      listEl.innerHTML = "";
+      d.features.forEach(function(f) {
+        const p = f.properties;
+        const coords = f.geometry.coordinates;
+        const main = [p.name, p.street && p.housenumber ? p.street + " " + p.housenumber : p.street].filter(Boolean).join(", ");
+        const sub  = [p.city || p.town || p.village, p.postcode].filter(Boolean).join(", ");
+        const fullAddr = [p.street && p.housenumber ? p.street + " " + p.housenumber : (p.street || p.name), p.city || p.town || p.village, p.postcode].filter(Boolean).join(", ");
+        const item = document.createElement("div");
+        item.className = "ac-item";
+        item.innerHTML = "<div class=\"ac-item-main\">" + esc(main||fullAddr) + "</div>" + (sub ? "<div class=\"ac-item-sub\">" + esc(sub) + "</div>" : "");
+        item.addEventListener("mousedown", function(e){ e.preventDefault(); });
+        item.addEventListener("click", function() {
+          const inputEl = document.getElementById(field === "pickup" ? "u-pickup" : "u-dest");
+          if (inputEl) inputEl.value = fullAddr;
+          acCoords[field] = { lat: coords[1], lng: coords[0] };
+          listEl.style.display = "none";
+        });
+        listEl.appendChild(item);
+      });
+      listEl.style.display = "block";
+    } catch(e) {}
+  }, 350);
+}
+
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+document.addEventListener("click", function(e) {
+  ["ac-list-pickup","ac-list-dest"].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el && !el.contains(e.target)) el.style.display = "none";
+  });
+});
+
+let abonadoHistoryData = [];
+
+async function downloadAbonadoPDF() {
+  if (!currentAbonado) return;
+  if (!abonadoHistoryData.length) { alert("Primero filtra el historial."); return; }
+  const jsPDFLib = window.jspdf;
+  if (!jsPDFLib) { alert("PDF no disponible."); return; }
+  const { jsPDF } = jsPDFLib;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  doc.setFillColor(26,26,46); doc.rect(0,0,210,30,"F");
+  doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont("helvetica","bold");
+  doc.text("TOPMOBILITY",14,13);
+  doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(180,180,210);
+  doc.text("Historial de servicios",14,21);
+  doc.text("Abonado: " + currentAbonado.name + " (" + currentAbonado.code + ")", 14, 27);
+  const rows = abonadoHistoryData.map(function(h){ return [h.completedAt||"", h.name||"", h.pickup||"", h.dest||"", h.driver ? h.driver.split(" -- ")[0] : "", h.plate||""]; });
+  doc.autoTable({
+    startY: 36,
+    head: [["Fecha","Pasajero","Recogida","Destino","Conductor","Matricula"]],
+    body: rows,
+    styles: {fontSize:8,cellPadding:3},
+    headStyles: {fillColor:[26,26,46],textColor:255,fontStyle:"bold"},
+    alternateRowStyles: {fillColor:[247,246,243]},
+    margin: {left:14,right:14}
+  });
+  doc.save("historial-" + currentAbonado.code + "-" + new Date().toISOString().slice(0,10) + ".pdf");
+}
+
+function showPasteTemplate() {
+  document.getElementById("paste-input").value = "";
+  document.getElementById("paste-modal").style.display = "flex";
+  setTimeout(function(){ document.getElementById("paste-input").focus(); }, 300);
+}
+
+function closePasteModal() {
+  document.getElementById("paste-modal").style.display = "none";
+}
+
+async function processTemplate() {
+  const text = document.getElementById("paste-input").value.trim();
+  if (!text) { alert("Por favor pega el mensaje primero."); return; }
+  const loadingEl = document.getElementById("paste-loading");
+  loadingEl.style.display = "block";
+  try {
+    const prompt = "Extrae los datos de esta solicitud de transporte y devuelve SOLO un JSON sin markdown: {name, phone, pickup, dest, date, time, notes, proyecto}. date en DD/MM/YYYY. Campos vacios si no aparecen. proyecto es el nombre del proyecto o programa. Mensaje: " + text;
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 600,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const rawText = data.content[0].text.trim().replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(rawText);
+    fillFormFromParsed(parsed);
+    closePasteModal();
+    abonadoGoRequest();
+  } catch(e) {
+    const parsed = parseTemplateLocally(text);
+    fillFormFromParsed(parsed);
+    closePasteModal();
+    abonadoGoRequest();
+  } finally {
+    loadingEl.style.display = "none";
+  }
+}
+
+function parseTemplateLocally(text) {
+  const lines = text.split("\n");
+  const r = { name:"", phone:"", pickup:"", dest:"", date:"", time:"", notes:"", proyecto:"" };
+  lines.forEach(function(line) {
+    const l = line.trim();
+    if (/persona:|pasajero:|nombre:/i.test(l)) r.name = l.replace(/.*?(persona:|pasajero:|nombre:)\s*/i, "").trim();
+    else if (/telefono:|tel:/i.test(l)) r.phone = l.replace(/.*?(telefono:|tel:)\s*/i, "").trim();
+    else if (/origen:|recogida:|salida:/i.test(l)) r.pickup = l.replace(/.*?(origen:|recogida:|salida:)\s*/i, "").trim();
+    else if (/destino:|llegada:/i.test(l)) r.dest = l.replace(/.*?(destino:|llegada:)\s*/i, "").trim();
+    else if (/fecha:/i.test(l)) r.date = l.replace(/.*?fecha:\s*/i, "").trim();
+    else if (/hora:/i.test(l)) r.time = l.replace(/.*?hora:\s*/i, "").trim();
+    else if (/programa:|proyecto:/i.test(l)) r.proyecto = l.replace(/.*?(programa:|proyecto:)\s*/i, "").trim();
+    else if (/vuelta:|notas:|nota:/i.test(l)) r.notes = (r.notes ? r.notes + " - " : "") + l.replace(/.*?(vuelta:|notas:|nota:)\s*/i, "").trim();
+  });
+  return r;
+}
+
+function fillFormFromParsed(parsed) {
+  if (parsed.name)    { const el=document.getElementById("u-name");    if(el) el.value=parsed.name; }
+  if (parsed.phone)   { const el=document.getElementById("u-phone");   if(el) el.value=parsed.phone; }
+  if (parsed.pickup)  { const el=document.getElementById("u-pickup");  if(el) el.value=parsed.pickup; }
+  if (parsed.dest)    { const el=document.getElementById("u-dest");    if(el) el.value=parsed.dest; }
+  if (parsed.notes)   { const el=document.getElementById("u-notes");   if(el) el.value=parsed.notes; }
+  if (parsed.proyecto){ const el=document.getElementById("u-proyecto"); if(el) el.value=parsed.proyecto; }
+  if (parsed.date && parsed.time) {
+    try {
+      const dp = parsed.date.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+      const tp = parsed.time.match(/(\d{1,2})(?:[:\.](\d{2}))?/);
+      if (dp && tp) {
+        const d = dp[1].padStart(2,"0"), m = dp[2].padStart(2,"0");
+        const y = dp[3].length===2 ? "20"+dp[3] : dp[3];
+        const h = tp[1].padStart(2,"0"), mn = (tp[2]||"00").padStart(2,"0");
+        const el = document.getElementById("u-time"); if(el) el.value = y+"-"+m+"-"+d+"T"+h+":"+mn;
+      }
+    } catch(e) {}
+  }
+}
+
+document.addEventListener("click", function(e) {
+  const modal = document.getElementById("paste-modal");
+  if (modal && e.target === modal) closePasteModal();
+});
+</script>
+</body>
+</html>
