@@ -1,32 +1,25 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8"/>
-  <meta http-equiv="Cache-Control" content="no-cache"/>
-  <title>Test Firestore</title>
-</head>
-<body>
-<h2 id="msg">Iniciando...</h2>
-<pre id="log"></pre>
+<head><meta charset="UTF-8"></head>
+<body style="font-family:sans-serif;padding:20px">
+<h2>Test de conexión Firestore</h2>
+<div id="result">Probando...</div>
 <script>
-var PROJECT = "topmobility";
-var KEY     = "AIzaSyBV5HzqGiYoekZqmT23iwE6zyomBX4CcZ4";
-var URL     = "https://firestore.googleapis.com/v1/projects/" + PROJECT + "/databases/(default)/documents/requests?pageSize=1&key=" + KEY;
+const API_KEY = "AIzaSyBV5HzqGiYoekZqmT23iwE6zyomBX4CcZ4";
+const url = "https://firestore.googleapis.com/v1/projects/topmobility/databases/(default)/documents/abonados?key=" + API_KEY;
 
-document.getElementById('log').textContent = "URL: " + URL;
-document.getElementById('msg').textContent = "Haciendo fetch...";
+document.getElementById('result').innerHTML = "Iniciando fetch a:<br>" + url + "<br><br>";
 
-fetch(URL)
+fetch(url)
   .then(function(r) {
-    document.getElementById('msg').textContent = "HTTP status: " + r.status;
-    return r.text();
+    document.getElementById('result').innerHTML += "Respuesta recibida. Status: " + r.status + "<br>";
+    return r.json();
   })
-  .then(function(body) {
-    document.getElementById('log').textContent += "\n\nRespuesta:\n" + body.slice(0, 300);
+  .then(function(data) {
+    document.getElementById('result').innerHTML += "JSON parseado OK<br>Documentos encontrados: " + (data.documents ? data.documents.length : 0) + "<br><pre>" + JSON.stringify(data, null, 2).slice(0, 500) + "</pre>";
   })
   .catch(function(e) {
-    document.getElementById('msg').textContent = "ERROR: " + e.message;
-    document.getElementById('log').textContent += "\n\nError: " + e.toString();
+    document.getElementById('result').innerHTML += "<strong style='color:red'>ERROR: " + e.message + "</strong>";
   });
 </script>
 </body>
