@@ -1,0 +1,20 @@
+{
+  "name": "Topmobility Gestión",
+  "short_name": "TM Gestión",
+  "description": "Panel de gestión Topmobility - Conductores y Administración",
+  "start_url": "/Topmobility/admin.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#1a1a2e",
+  "orientation": "portrait",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "logo-tm.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "transportation", "business"]
+}
